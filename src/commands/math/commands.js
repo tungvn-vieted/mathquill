@@ -702,6 +702,11 @@ var Matrix =
 LatexCmds.matrix = P(MathCommand, function(_, super_) {
 
   var MatrixCell = P(MathBlock, function(_, super_) {
+    _.init = function (column, row) {
+      this.column = column;
+      this.row = row;
+      return super_.init.call(this);
+    };
     _.keystroke = function(key, e, ctrlr) {
       switch (key) {
       case 'Shift-Spacebar':
@@ -766,10 +771,22 @@ LatexCmds.matrix = P(MathCommand, function(_, super_) {
   };
 
   _.latex = function() {
-    var matrixName = this.getMatrixName(), row;
-
+    var matrixName = this.getMatrixName(), row, column;
+console.log('latex');
     return '\\begin{' + matrixName + '}' + this.foldChildren([], function(latex, child) {
-      var thisRow = child.jQ.closest('tr')[0];
+      // var thisRow = child.jQ.closest('tr')[0];
+      // if (row) {
+      //   if (row !== thisRow) {
+      //     latex.push(delimiters.row);
+      //   } else {
+      //     latex.push(delimiters.column);
+      //   }
+      // }
+      // row = thisRow;
+
+      var thisRow = child.row,
+        thisColumn = child.column;
+console.log(row);
       if (row) {
         if (row !== thisRow) {
           latex.push(delimiters.row);
@@ -777,7 +794,9 @@ LatexCmds.matrix = P(MathCommand, function(_, super_) {
           latex.push(delimiters.column);
         }
       }
+
       row = thisRow;
+      column = thisColumn;
       latex.push(child.latex());
       return latex;
     }).join('') + '\\end{' + matrixName + '}';
@@ -825,6 +844,7 @@ LatexCmds.matrix = P(MathCommand, function(_, super_) {
   // Based on matrix parsing method in
   // https://github.com/raywainman/mathquill/commit/5a9c6a04ac4e8bb1fd4f912ccbfa53a99224adf8
   _.parser = function() {
+console.log('parser');
     var regex = Parser.regex, self = this, matrixName = this.getMatrixName(),
       rgxContents = new RegExp("^(.*)\\\\end{" + matrixName + "}"),
       rgxEnd = new RegExp("\\\\end{" + matrixName + "}");
@@ -860,10 +880,11 @@ LatexCmds.matrix = P(MathCommand, function(_, super_) {
           // a MathBlock object which is the object representation of the formula.
 
           // We create a new MatrixCell which receives the MathBlock's children
-          var block = MatrixCell(),
+          var block = MatrixCell(a, i),
             tmpBlock = latexMathParser.parse(columns[a] || ' ');
 
           tmpBlock.children().adopt(block, block.ends[R], 0);
+
           blocks.push(block);
         }
       }
@@ -886,6 +907,7 @@ LatexCmds.matrix = P(MathCommand, function(_, super_) {
   };
   // Relink all the cells after parsing
   _.finalizeTree = function() {
+console.log('finalizeTree');
     var table = this.jQ.find('table');
     this.relink();
 

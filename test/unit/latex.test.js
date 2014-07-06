@@ -1,8 +1,12 @@
 suite('latex', function() {
   function assertParsesLatex(str, latex) {
     if (arguments.length < 2) latex = str;
-
+if (str.indexOf('bmatrix') > -1) {
+  console.log(result, latex);
+//  debugger;
+}
     var result = latexMathParser.parse(str).postOrder('finalizeTree').join('latex');
+
     assert.equal(result, latex,
       'parsing \''+str+'\', got \''+result+'\', expected \''+latex+'\''
     );
@@ -100,6 +104,10 @@ suite('latex', function() {
     assertParsesLatex('\\text { lol! } ', '\\text{ lol! }');
     assertParsesLatex('\\text{apples} \\ne \\text{oranges}',
                       '\\text{apples}\\ne \\text{oranges}');
+  });
+
+  test('\\bmatrix', function() {
+    assertParsesLatex('\\begin{bmatrix}x&y\\\\1&2\\end{bmatrix}');
   });
 
   suite('public API', function() {

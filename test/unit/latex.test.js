@@ -1,10 +1,6 @@
 suite('latex', function() {
   function assertParsesLatex(str, latex) {
     if (arguments.length < 2) latex = str;
-if (str.indexOf('bmatrix') > -1) {
-  console.log(result, latex);
-//  debugger;
-}
     var result = latexMathParser.parse(str).postOrder('finalizeTree').join('latex');
 
     assert.equal(result, latex,
@@ -106,8 +102,15 @@ if (str.indexOf('bmatrix') > -1) {
                       '\\text{apples}\\ne \\text{oranges}');
   });
 
-  test('\\bmatrix', function() {
-    assertParsesLatex('\\begin{bmatrix}x&y\\\\1&2\\end{bmatrix}');
+  test('matrices', function() {
+    assertParsesLatex('\\begin{matrix}x\\end{matrix}');
+    assertParsesLatex('\\begin{pmatrix}x\\end{pmatrix}');
+    assertParsesLatex('\\begin{Bmatrix}x\\end{Bmatrix}');
+    assertParsesLatex('\\begin{vmatrix}x&y\\\\1&2\\end{vmatrix}');
+    assertParsesLatex('\\begin{bmatrix}x&y&z&123&x^2\\\\23&s&\\sin \\theta &1&x\\\\e&h&a&1&y\\end{bmatrix}');
+
+    // Adds missing cells
+    assertParsesLatex('\\begin{Vmatrix}x&y\\\\1\\end{Vmatrix}', '\\begin{Vmatrix}x&y\\\\1&\\end{Vmatrix}');
   });
 
   suite('public API', function() {

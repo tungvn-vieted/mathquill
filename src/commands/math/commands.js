@@ -750,13 +750,18 @@ LatexCmds.matrix = P(MathCommand, function(_, super_) {
 
   _.createBlocks = function() {
     var cmd = this,
-      numBlocks = cmd.numBlocks(),
-      blocks = cmd.blocks = Array(numBlocks);
+      blocks = cmd.blocks = [],
+      prevRow, column, i = 0;
 
-    for (var i = 0; i < numBlocks; i += 1) {
-      var newBlock = blocks[i] = MatrixCell();
-      newBlock.adopt(cmd, cmd.ends[R], 0);
-    }
+    this.htmlTemplate.replace(/&\d+/g, function (match, index) {
+      var row = cmd.htmlTemplate.substring(0, index).match(/<tr[^>]*>/ig).length - 1;
+      column = (prevRow === row) ? column + 1 : 0;
+
+      blocks[i] = MatrixCell(column, row);
+      blocks[i].adopt(cmd, cmd.ends[R], 0);
+      prevRow = row;
+      i++;
+    });
   };
 
   _.edited = function() {
@@ -771,35 +776,27 @@ LatexCmds.matrix = P(MathCommand, function(_, super_) {
   };
 
   _.latex = function() {
-    var matrixName = this.getMatrixName(), row, column;
-console.log('latex');
-    return '\\begin{' + matrixName + '}' + this.foldChildren([], function(latex, child) {
-      // var thisRow = child.jQ.closest('tr')[0];
-      // if (row) {
-      //   if (row !== thisRow) {
-      //     latex.push(delimiters.row);
-      //   } else {
-      //     latex.push(delimiters.column);
-      //   }
-      // }
-      // row = thisRow;
+    var matrixName = this.getMatrixName(),
+      latex = '\\begin{' + matrixName + '}',
+      thisRow, row, i;
 
-      var thisRow = child.row,
-        thisColumn = child.column;
-console.log(row);
-      if (row) {
+    for(i = 0; i < this.blocks.length; i++) {
+      thisRow = this.blocks[i].row;
+
+      if (typeof row !== 'undefined') {
         if (row !== thisRow) {
-          latex.push(delimiters.row);
+          latex += delimiters.row;
         } else {
-          latex.push(delimiters.column);
+          latex += delimiters.column;
         }
       }
 
       row = thisRow;
-      column = thisColumn;
-      latex.push(child.latex());
-      return latex;
-    }).join('') + '\\end{' + matrixName + '}';
+      latex += this.blocks[i].latex();
+    };
+
+    latex += '\\end{' + matrixName + '}';
+    return latex;
   };
   _.createLeftOf = function(cursor) {
     this.cursor = cursor;
@@ -844,7 +841,6 @@ console.log(row);
   // Based on matrix parsing method in
   // https://github.com/raywainman/mathquill/commit/5a9c6a04ac4e8bb1fd4f912ccbfa53a99224adf8
   _.parser = function() {
-console.log('parser');
     var regex = Parser.regex, self = this, matrixName = this.getMatrixName(),
       rgxContents = new RegExp("^(.*)\\\\end{" + matrixName + "}"),
       rgxEnd = new RegExp("\\\\end{" + matrixName + "}");
@@ -907,17 +903,19 @@ console.log('parser');
   };
   // Relink all the cells after parsing
   _.finalizeTree = function() {
-console.log('finalizeTree');
     var table = this.jQ.find('table');
-    this.relink();
 
-    // update mq-rows-<number> class on table
-    table.removeClass(function (index, classes) {
-      var toRemove = classes.match(/mq-rows-\d+/g);
-      return (toRemove && toRemove.join(' ')) || '';
-    });
+    if (table.length) {
+      this.relink();
 
-    table.addClass('mq-rows-' + table.find('tr').length);
+      // update mq-rows-<number> class on table
+      table.removeClass(function (index, classes) {
+        var toRemove = classes.match(/mq-rows-\d+/g);
+        return (toRemove && toRemove.join(' ')) || '';
+      });
+
+      table.addClass('mq-rows-' + table.find('tr').length);
+    }
   };
   // Reassign directional pointers for cursor key navigation between cells.
   _.relink = function () {
@@ -925,11 +923,13 @@ console.log('finalizeTree');
     var firstCellBlock = Node.byId[allCells.first().attr(mqBlockId)];
     var lastCellBlock = Node.byId[allCells.last().attr(mqBlockId)];
     var firstRow = allCells.eq(0).closest('tr');
+    var blocks = [];
 
     allCells.each(function (cellIndex) {
       var cellBlock = Node.byId[$(this).attr(mqBlockId)];
       var nextCell = allCells.eq(cellIndex + 1);
       var nextRow = $(this).closest('tr').next('tr');
+      var indexInColumn = $(this).closest('tr').index();
       var indexInRow = $(this).index();
       var downCell;
 
@@ -952,6 +952,10 @@ console.log('finalizeTree');
         cellBlock.downOutOf = downCellBlock;
         downCellBlock.upOutOf = cellBlock;
       }
+
+      cellBlock.column = indexInRow;
+      cellBlock.row = indexInColumn;
+      blocks.push(cellBlock);
     });
     // set start and end blocks of matrix - first and last cells.
     this.ends[L] = firstCellBlock;
@@ -960,6 +964,8 @@ console.log('finalizeTree');
     // delete any leftover linkage to removed blocks at the beginning and end.
     if (firstCellBlock && firstCellBlock[L]) { delete firstCellBlock[L]; }
     if (lastCellBlock && lastCellBlock[R]) { delete lastCellBlock[R]; }
+
+    this.blocks = blocks;
   };
 
   // Also deletes row or column if it is empty

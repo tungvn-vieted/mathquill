@@ -1020,4 +1020,37 @@ suite('typing with auto-replaces', function() {
       assert.equal(mq.typedText('n').latex(), 'x^{2n}');
     });
   });
+
+  suite('Matrices', function() {
+    test('type \\matrix', function() {
+      mq.typedText('\\matrix-x');
+      assertLatex('\\begin{matrix}-x&\\\\&\\end{matrix}');
+    });
+
+    test('add matrix via mq.write', function() {
+      mq.write('\\begin{matrix}x&y\\\\1&2\\end{matrix}');
+      assertLatex('\\begin{matrix}x&y\\\\1&2\\end{matrix}');
+    });
+
+    test('key bindings add rows and columns to matrix', function() {
+      mq.typedText('\\matrix-x');
+
+      mq.keystroke('Shift-Spacebar');
+      assertLatex('\\begin{matrix}-x&&\\\\&&\\end{matrix}');
+
+      mq.keystroke('Shift-Enter');
+      assertLatex('\\begin{matrix}-x&&\\\\&&\\\\&&\\end{matrix}');
+    });
+
+    test('cursor keys navigate around matrix', function() {
+      mq.write('\\begin{matrix}&&\\\\&&\\\\&&\\end{matrix}');
+
+      mq.keystroke('Left Left Left').typedText('a')
+        .keystroke('Up').typedText('b')
+        .keystroke('Right').typedText('c')
+        .keystroke('Down').typedText('d');
+
+      assertLatex('\\begin{matrix}&&\\\\b&c&\\\\a&d&\\end{matrix}');
+    });
+  });
 });

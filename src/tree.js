@@ -191,6 +191,33 @@ var Node = P(function(_) {
     this.postOrder('dispose');
     return this.disown();
   };
+
+  _.howDeep = function(node) {
+    var parents = 0, deepness = 0;
+    if (!node) node = this;
+    while (node.parent) { node = node.parent; parents++; }
+    deepness = 1 + Math.floor(parents/2);
+    return deepness;
+  };
+
+  _.tooDeep = function(node) {
+    var howDeep, opts;
+    if (!node) node = this;
+    howDeep = this.howDeep(node);
+    opts = this.getOptionsFromRoot(node);
+    if (opts && opts.howDeep && opts.howDeep < howDeep) {
+        return true;
+    }
+    return false;
+  };
+
+  _.getOptionsFromRoot = function(node) {
+    if (!node) node = this;
+    while (node.parent) { node = node.parent; }
+    if (node.controller && node.controller.options)
+        return node.controller.options;
+    else return {};
+  };
 });
 
 function prayWellFormed(parent, leftward, rightward) {

@@ -409,7 +409,10 @@ var MathBlock = P(MathElement, function(_, super_) {
       return VanillaSymbol(ch);
   };
   _.write = function(cursor, ch) {
-    var cmd = this.chToCmd(ch);
+    var cmd;
+    // preventing creating too many nested symbols
+    if (cursor.tooDeep()) return false;
+    cmd = this.chToCmd(ch);
     if (cursor.selection) cmd.replaces(cursor.replaceSelection());
     cmd.createLeftOf(cursor.show());
   };

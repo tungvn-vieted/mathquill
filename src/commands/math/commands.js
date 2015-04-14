@@ -575,6 +575,38 @@ LatexCmds.underset = P(MathCommand, function(_, super_) {
   };
 });
 
+LatexCmds.atomic = P(MathCommand, function(_, super_) {
+  _.ctrlSeq = '\\atomic';
+  _.htmlTemplate =
+      '<span class="mq-atomic mq-non-leaf">'
+    +   '<span class="mq-atomic-over"><span class="mq-empty-box">&0</span></span>'
+    +   '<span class="mq-atomic-under"><span class="mq-empty-box">&1</span></span>'
+    +   '<span style="display:inline-block;width:0">&nbsp;</span>'
+    + '</span>'
+  ;
+  _.textTemplate = ['[', '|', ']'];
+  _.finalizeTree = function() {
+    this.downInto = this.ends[L].upOutOf = this.ends[R];
+    this.upInto = this.ends[R].downOutOf = this.ends[L];
+  };
+});
+
+LatexCmds.polyatomic = P(MathCommand, function(_, super_) {
+  _.ctrlSeq = '\\polyatomic';
+  _.htmlTemplate =
+      '<span class="mq-polyatomic mq-non-leaf">'
+    +   '<span class="mq-polyatomic-under"><span class="mq-empty-box">&0</span></span>'
+    +   '<span class="mq-polyatomic-over"><span class="mq-empty-box">&1</span></span>'
+    +   '<span style="display:inline-block;width:0">&nbsp;</span>'
+    + '</span>'
+  ;
+  _.textTemplate = ['[', '|', ']'];
+  _.finalizeTree = function() {
+    this.downInto = this.ends[L].upOutOf = this.ends[R];
+    this.upInto = this.ends[R].downOutOf = this.ends[L];
+  };
+});
+
 var SquareRoot =
 LatexCmds.sqrt =
 LatexCmds['√'] = P(MathCommand, function(_, super_) {

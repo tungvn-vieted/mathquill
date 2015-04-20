@@ -396,11 +396,11 @@ var MathBlock = P(MathElement, function(_, super_) {
   };
   _.write = function(cursor, ch, replacedFragment) {
     var pnt = this, opts = {}, cmd;
-
+    // preventing creating too many nested symbols
+    if (this.tooDeep(cursor)) return false;
     // Get options from the root
     if (ch === 'f') {
-      while (pnt.parent) { pnt = pnt.parent; }
-      opts = pnt.controller && pnt.controller.options;
+      opts = pnt.getOptionsFromRoot();
     }
 
     if (ch.match(/^[a-eg-zA-Z]$/)) //exclude f because want florin

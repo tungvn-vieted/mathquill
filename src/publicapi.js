@@ -38,7 +38,11 @@ function setMathQuillDot(name, API) {
 var AbstractMathQuill = P(function(_) {
   _.init = function() { throw "wtf don't call me, I'm 'abstract'"; };
   _.initRoot = function(root, el, opts) {
-    var ctrlr = this.controller = root.controller = Controller(root, el, opts);
+    var ctrlr;
+    if (!opts) opts = {};
+    // setting default maximum number of nested symbols
+    if (!opts.howDeep) opts.howDeep = 100;
+    ctrlr = this.controller = root.controller = Controller(root, el, opts);
     ctrlr.createTextarea();
     ctrlr.API = this;
     root.cursor = ctrlr.cursor; // TODO: stop depending on root.cursor, and rm it
@@ -118,6 +122,8 @@ var EditableField = MathQuill.EditableField = P(AbstractMathQuill, function(_) {
       var klass = LatexCmds[cmd];
       if (klass) {
         cmd = klass(cmd);
+        // preventing creating too many nested symbols
+        if (cmd.tooDeep(cursor)) return false;
         if (cursor.selection) cmd.replaces(cursor.replaceSelection());
         cmd.createLeftOf(cursor);
       }

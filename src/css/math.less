@@ -372,14 +372,9 @@
     // special styles for fractions and similar symbols
     // within sup/sub.
 
-    .mq-fraction, .mq-underset, .mq-atomic {
+    .mq-fraction, .mq-underset {
       font-size: 70%;
       vertical-align: -0.4em;
-    }
-
-    .mq-polyatomic {
-      font-size: 70%;
-      vertical-align: .6em;
     }
 
     .mq-numerator, .mq-over {
@@ -388,6 +383,17 @@
 
     .mq-denominator, .mq-under {
       padding-top: 0;
+    }
+
+    &.mq-polyatomic {
+      vertical-align: 0.5em;
+
+      .mq-sup {
+        float: right;
+      }
+      .mq-sub {
+        margin-top: 1em;
+      }
     }
   }
 
@@ -443,37 +449,34 @@
     padding-right: .2em;
   }
 
+  .mq-nothing {
+    width: 0;
+    padding: 0;
+    margin: 0;
+    height: 100%;
+  }
+
   ////
   // \frac
   // fractions
   // TODO: try http://jsbin.com/gabunebe/4/edit instead
   //   obsoletes the &nbsp; in HTML template, but needs cross-browser
   //   testing. See also .supsub
-  .mq-fraction, .mq-underset, .mq-atomic, .mq-polyatomic {
+  .mq-fraction, .mq-underset {
     font-size: 90%;
     text-align: center;
     vertical-align: -.5em;
     padding: 0 .2em;
   }
 
-  .mq-atomic {
-    vertical-align: -.6em;
-    padding: 0 .1em 0 .2em;
-  }
-
-  .mq-polyatomic {
-    vertical-align: .5em;
-    padding: 0 .2em 0 0.1em;
-  }
-
   // Firefox 2 (and older?) only
   // because display:inline-block is FUBAR in Gecko < 1.9.0
-  .mq-fraction, .mq-underset, .mq-atomic, .mq-polyatomic, .mq-large-operator, x:-moz-any-link {
+  .mq-fraction, .mq-underset, .mq-large-operator, x:-moz-any-link {
     display: -moz-groupbox;
   }
 
   // Firefox 3+ (Gecko 1.9.0+)
-  .mq-fraction, .mq-underset, .mq-atomic, .mq-polyatomic, .mq-large-operator, x:-moz-any-link, x:default {
+  .mq-fraction, .mq-underset, .mq-large-operator, x:-moz-any-link, x:default {
     display: inline-block;
   }
 
@@ -481,27 +484,13 @@
     line-height: 0.6em;
   }
 
-  .mq-numerator, .mq-denominator, .mq-over, .mq-under,
-  .mq-atomic-over, .mq-polyatomic-over, .mq-atomic-under, .mq-polyatomic-under {
+  .mq-numerator, .mq-denominator, .mq-over, .mq-under {
     display: block;
   }
 
   .mq-numerator, .mq-over {
     padding: .1em .1em 0 .1em;
     width: 100%;
-  }
-
-  .mq-atomic-under, .mq-polyatomic-over {
-    float: left;
-    padding: 0 .1em .1em 0;
-    width: auto;
-    text-align: left;
-    font-size: 80%;
-    box-sizing: border-box;
-  }
-
-  .mq-polyatomic-over {
-    padding: .1em 0 0 0;
   }
 
   .mq-numerator {
@@ -513,19 +502,6 @@
     width: 100%;
     text-align: center;
     padding: 0 .1em .1em .1em;
-  }
-
-  .mq-atomic-over, .mq-polyatomic-under {
-    width: auto;
-    text-align: left;
-    padding: .1em .1em .1em 0;
-    font-size: 80%;
-    box-sizing: border-box;
-  }
-
-  .mq-polyatomic-under {
-    float: left;
-    padding: 1.4em 0 .1em 0;
   }
 
   .mq-denominator {

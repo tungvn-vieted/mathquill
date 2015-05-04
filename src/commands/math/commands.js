@@ -329,19 +329,41 @@ var SupSub = P(MathCommand, function(_, super_) {
       if (chars.indexOf(ch) > -1) {
         cursor.insRightOf(this.parent);
       }
+      // Check if char was space and there's nothing to the right
+      else if (ch === ' ' && !cursor[R]) {
+        // inserting polyatomic only when sub already exists
+        if (this.parent.supsub === 'sub' && this.parent.sub) {
+            var supsub = this.parent;
+            // setting correct class and flag for SupSub
+            supsub.polyatomic = true;
+            supsub.polyatomicClass();
+            return;
+        }
+      }
       MathBlock.p.write.apply(this, arguments);
     };
+    this.polyatomicClass();
+  };
+  _.polyatomicClass = function() {
+    // polyatomic flag is set in `SupSub.addBlock`, `SupSub.respace`,
+    // `SupSub.finalizeTree` and in `LatexCmds.subscript.parser`
+    this.jQ.toggleClass('mq-polyatomic', this.polyatomic);
   };
   _.latex = function() {
     function latex(prefix, block) {
       var l = block && block.latex();
       return block ? prefix + (l.length === 1 ? l : '{' + (l || ' ') + '}') : '';
     }
-    return latex('_', this.sub) + latex('^', this.sup);
+    // Add empty braces after subscript if this is polyatomic
+    return latex('_', this.sub) + (this.polyatomic ? '{}' : '') + latex('^', this.sup);
   };
   _.respace = _.siblingCreated = _.siblingDeleted = function(dir) {
     if (dir === R) return; // ignore if sibling only changed on the right
     this.jQ.toggleClass('mq-limit', this[L].ctrlSeq === '\\int ');
+    if ((!this.sup || !this.sub) && this.polyatomic) {
+      this.polyatomic = false;
+    }
+    this.polyatomicClass();
   };
   _.addBlock = function(block) {
     if (this.supsub === 'sub') {
@@ -357,6 +379,7 @@ var SupSub = P(MathCommand, function(_, super_) {
         .attr(mqBlockId, block.id).appendTo(this.jQ.removeClass('mq-sup-only'));
       this.jQ.append('<span style="display:inline-block;width:0">&nbsp;</span>');
     }
+    this.polyatomic = !!block.polyatomic;
     // like 'sub sup'.split(' ').forEach(function(supsub) { ... });
     for (var i = 0; i < 2; i += 1) (function(cmd, supsub, oppositeSupsub, updown) {
       cmd[supsub].deleteOutOf = function(dir, cursor) {
@@ -484,6 +507,20 @@ LatexCmds._ = P(SupSub, function(_, super_) {
     this.sub.upOutOf = insLeftOfMeUnlessAtEnd;
     super_.finalizeTree.call(this);
   };
+  _.parser = function () {
+    var regex = Parser.regex;
+    var optWhitespace = Parser.optWhitespace;
+    var self = this;
+
+    return optWhitespace.then(regex(/^([^{}]|{.*}){}/)).map(function (latex) {
+      // create our mathblock, removing the '{}'
+      self.blocks = [ latexMathParser.parse(latex.replace(/{}$/, '')) ];
+      self.blocks[0].adopt(self, self.ends[R], 0);
+
+      self.blocks[0].polyatomic = true;
+      return self;
+    }).or(super_.parser.call(this));
+  };
 });
 
 LatexCmds.superscript =
@@ -570,38 +607,6 @@ LatexCmds.underset = P(MathCommand, function(_, super_) {
     if (under.latex() === '\\sim ') {
       this.jQ.addClass('mq-tilde-vector');
     }
-    this.downInto = this.ends[L].upOutOf = this.ends[R];
-    this.upInto = this.ends[R].downOutOf = this.ends[L];
-  };
-});
-
-LatexCmds.atomic = P(MathCommand, function(_, super_) {
-  _.ctrlSeq = '\\atomic';
-  _.htmlTemplate =
-      '<span class="mq-atomic mq-non-leaf">'
-    +   '<span class="mq-atomic-over"><span class="mq-empty-box">&0</span></span>'
-    +   '<span class="mq-atomic-under"><span class="mq-empty-box">&1</span></span>'
-    +   '<span style="display:inline-block;width:0">&nbsp;</span>'
-    + '</span>'
-  ;
-  _.textTemplate = ['[', '|', ']'];
-  _.finalizeTree = function() {
-    this.downInto = this.ends[L].upOutOf = this.ends[R];
-    this.upInto = this.ends[R].downOutOf = this.ends[L];
-  };
-});
-
-LatexCmds.polyatomic = P(MathCommand, function(_, super_) {
-  _.ctrlSeq = '\\polyatomic';
-  _.htmlTemplate =
-      '<span class="mq-polyatomic mq-non-leaf">'
-    +   '<span class="mq-polyatomic-under"><span class="mq-empty-box">&0</span></span>'
-    +   '<span class="mq-polyatomic-over"><span class="mq-empty-box">&1</span></span>'
-    +   '<span style="display:inline-block;width:0">&nbsp;</span>'
-    + '</span>'
-  ;
-  _.textTemplate = ['[', '|', ']'];
-  _.finalizeTree = function() {
     this.downInto = this.ends[L].upOutOf = this.ends[R];
     this.upInto = this.ends[R].downOutOf = this.ends[L];
   };

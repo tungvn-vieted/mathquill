@@ -406,7 +406,7 @@ var MathBlock = P(MathElement, function(_, super_) {
     if (ch.match(/^[a-eg-zA-Z]$/)) //exclude f because want florin
       cmd = Letter(ch);
     else if (ch === 'f')
-      cmd = (opts.disableFlorin) ? Letter(ch) : Florin(ch);
+      cmd = (opts.disableItalics) ? Letter(ch) : Florin(ch);
     else if (cmd = CharCmds[ch] || LatexCmds[ch])
       cmd = cmd(ch);
     else
@@ -456,7 +456,7 @@ setMathQuillDot('InertMath', P(AbstractMathQuill, function(_, super_) {
   _.init = function(el, opts) {
     var contents = el.contents().detach();
     this.initRoot(MathBlock(), el.addClass('mq-math-mode'), {
-      disableFlorin: opts && opts.disableFlorin
+      disableItalics: opts && opts.disableItalics
     });
     this.controller.renderLatexMath(contents.text());
   };

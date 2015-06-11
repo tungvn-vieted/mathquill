@@ -728,8 +728,39 @@ suite('Public API', function() {
       assert.equal(mq.latex(), '');
       mq.write('asdf');
       mq.select();
-
       $(mq.el()).remove();
+    });
+  });
+
+  suite('disableItalics', function() {
+    var opts = { 'disableItalics': true }, mq, mq2;
+
+    function assertDisableItalics() {
+        var $el = $(mq.el());
+        var italics = $el.find('var').filter(function () {
+          return $(this).css('font-style') === 'italic';
+        });
+        assert.ok(!italics.length, 'Expected all letters to be unitalicised');
+        assert.equal($el.find('.mq-disable-italics').length, 1);
+    }
+
+    test('prevents letters from being italicised', function() {
+      mq = MathQuill.MathField( $('<span>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</span>').appendTo('#mock')[0], opts);
+      assertDisableItalics();
+      $(mq.el()).remove();
+    });
+
+    test('disableItalics also works for InertMath', function() {
+      mq = MathQuill.InertMath( $('<span>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</span>').appendTo('#mock')[0], opts);
+      assertDisableItalics();
+      $(mq.el()).remove();
+    });
+
+    test('disableItalics persists', function() {
+      mq = MathQuill.MathField( $('<span>abcdefg</span>').appendTo('#mock')[0], opts);
+      mq2 = MathQuill.MathField( $('<span>abcdefg</span>').appendTo('#mock')[0]);
+      assertDisableItalics();
+      $(mq.el(), mq2.el()).remove();
     });
   });
 });

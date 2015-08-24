@@ -140,8 +140,8 @@ suite('typing with auto-replaces', function() {
           mq.config({ restrictMismatchedBrackets: true });
         });
         test('typing (|x|+1) works', function() {
-          mq.typedText('(|x|+1)');
-          assertLatex('\\left(\\left|x\\right|+1\\right)');
+          mq.typedText('(|x+1)');
+          assertLatex('\\left(\\abs{x}+1\\right)');
         });
         test('typing [x} becomes [{x}]', function() {
           mq.typedText('[x}');
@@ -161,23 +161,23 @@ suite('typing with auto-replaces', function() {
     suite('pipes', function() {
       test('empty pipes ||', function() {
         mq.typedText('|');
-        assertLatex('\\left|\\right|');
+        assertLatex('\\abs{ }');
         mq.typedText('|');
-        assertLatex('\\left|\\right|');
+        assertLatex('\\abs{ }');
       });
 
       test('straight typing 1+|2+3|+4', function() {
         mq.typedText('1+|2+3|+4');
-        assertLatex('1+\\left|2+3\\right|+4');
+        assertLatex('1+\\abs{2+3}+4');
       });
 
       test('wrapping things in pipes 1+|2+3|+4', function() {
         mq.typedText('1+2+3+4');
         assertLatex('1+2+3+4');
         mq.keystroke('Home Right Right').typedText('|');
-        assertLatex('1+\\left|2+3+4\\right|');
+        assertLatex('1+\\abs{2+3+4}right|');
         mq.keystroke('Right Right Right').typedText('|');
-        assertLatex('1+\\left|2+3\\right|+4');
+        assertLatex('1+\\abs{2+3}+4');
       });
 
       suite('can type mismatched paren/pipe group from any side', function() {

@@ -859,9 +859,20 @@ function DelimsMixin(_, super_) {
 //   first typed as one-sided bracket with matching "ghost" bracket at
 //   far end of current block, until you type an opposing one
 var Bracket = P(P(MathCommand, DelimsMixin), function(_, super_) {
-  _.init = function(side, open, close, ctrlSeq, end) {
-    super_.init.call(this, '\\left'+ctrlSeq, undefined, [open, close]);
+  _.init = function(side, open, close, ctrlSeq, end, leftLatex, rightLatex) {
+
+    if (!leftLatex) {
+      leftLatex = '\\left';
+    }
+
+    if (!rightLatex) {
+      rightLatex = '\\right';
+    }
+
+    super_.init.call(this, leftLatex + ctrlSeq, undefined, [open, close]);
     this.side = side;
+    this.leftLatex = leftLatex;
+    this.rightLatex = rightLatex;
     this.sides = {};
     this.sides[L] = { ch: open, ctrlSeq: ctrlSeq };
     this.sides[R] = { ch: close, ctrlSeq: end };
@@ -882,7 +893,7 @@ var Bracket = P(P(MathCommand, DelimsMixin), function(_, super_) {
     return super_.html.call(this);
   };
   _.latex = function() {
-    return '\\left'+this.sides[L].ctrlSeq+this.ends[L].latex()+'\\right'+this.sides[R].ctrlSeq;
+    return this.leftLatex+this.sides[L].ctrlSeq+this.ends[L].latex()+this.rightLatex+this.sides[R].ctrlSeq;
   };
   _.oppBrack = function(opts, node, expectedSide) {
     // return node iff it's a 1-sided bracket of expected side (if any, may be
@@ -1020,10 +1031,11 @@ function bindCharBracketPair(open, ctrlSeq) {
 }
 bindCharBracketPair('(');
 bindCharBracketPair('[');
+bindCharBracketPair('|');
 bindCharBracketPair('{', '\\{');
 LatexCmds.langle = bind(Bracket, L, '&lang;', '&rang;', '\\langle ', '\\rangle ');
 LatexCmds.rangle = bind(Bracket, R, '&lang;', '&rang;', '\\langle ', '\\rangle ');
-CharCmds['|'] = LatexCmds.abs;
+CharCmds['|'] = bind(Bracket, L, '|', '|', '', '', '\\abs{', '}');
 
 LatexCmds.left = P(MathCommand, function(_) {
   _.parser = function() {

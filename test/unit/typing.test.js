@@ -572,7 +572,7 @@ suite('typing with auto-replaces', function() {
 
         test('backspacing close-pipe then open-pipe of 1+||+4 (empty pipe pair)', function() {
           mq.typedText('1+||+4');
-          assertLatex('1+\\abs{}|+4');
+          assertLatex('1+\\abs{}+4');
           mq.keystroke('Left Left Backspace');
           assertLatex('1+\\abs{+4}');
           assertParenBlockNonEmpty();
@@ -582,7 +582,7 @@ suite('typing with auto-replaces', function() {
 
         test('backspacing open-pipe then close-pipe of 1+||+4 (empty pipe pair)', function() {
           mq.typedText('1+||+4');
-          assertLatex('1+\\abs{}|+4');
+          assertLatex('1+\\abs{}+4');
           mq.keystroke('Left Left Left Backspace');
           assertLatex('\\abs{1+}+4');
           assertParenBlockNonEmpty();
@@ -592,16 +592,16 @@ suite('typing with auto-replaces', function() {
 
         test('backspacing close-pipe then open-pipe of 1+|| (empty pipe pair, nothing after)', function() {
           mq.typedText('1+||');
-          assertLatex('1+\\abs{}|');
+          assertLatex('1+\\abs{}');
           mq.keystroke('Backspace');
-          assertLatex('1+\\abs{}|');
+          assertLatex('1+\\abs{}');
           mq.keystroke('Backspace');
           assertLatex('1+');
         });
 
         test('backspacing open-pipe then close-pipe of 1+|| (empty pipe pair, nothing after)', function() {
           mq.typedText('1+||');
-          assertLatex('1+\\abs{}|');
+          assertLatex('1+\\abs{}');
           mq.keystroke('Left Backspace');
           assertLatex('\\abs{1+}');
           assertParenBlockNonEmpty();
@@ -611,7 +611,7 @@ suite('typing with auto-replaces', function() {
 
         test('backspacing close-pipe then open-pipe of ||+4 (empty pipe pair, nothing before)', function() {
           mq.typedText('||+4');
-          assertLatex('\\abs{}|+4');
+          assertLatex('\\abs{}+4');
           mq.keystroke('Left Left Backspace');
           assertLatex('\\abs{+4}');
           assertParenBlockNonEmpty();
@@ -621,9 +621,9 @@ suite('typing with auto-replaces', function() {
 
         test('backspacing open-pipe then close-pipe of ||+4 (empty pipe pair, nothing before)', function() {
           mq.typedText('||+4');
-          assertLatex('\\abs{}|+4');
+          assertLatex('\\abs{}+4');
           mq.keystroke('Left Left Left Backspace');
-          assertLatex('\\abs{}|+4');
+          assertLatex('\\abs{}+4');
           mq.keystroke('Right Right Backspace');
           assertLatex('+4');
         });
@@ -856,9 +856,9 @@ suite('typing with auto-replaces', function() {
 
         test('can type pipe on solid side of one-sided pipe ||||', function() {
           mq.typedText('|');
-          assertLatex('\\abs{}|');
+          assertLatex('\\abs{}');
           mq.moveToLeftEnd().typedText('|');
-          assertLatex('\\abs{\\abs{}|}');
+          assertLatex('\\abs{\\abs{}}');
         });
       });
     });

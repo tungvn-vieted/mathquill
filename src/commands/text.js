@@ -180,6 +180,13 @@ var TextBlock = P(Node, function(_, super_) {
     self.jQ[0].normalize();
 
     var textPcDom = self.jQ.contents().filter(function (i, el) { return el.nodeType === 3; })[0]
+    // when empty \text command is sent, set it to empty string
+    if (!textPcDom) {
+      textPcDom = {
+        data: ""
+      };
+    }
+
     var textPc = TextPiece(textPcDom.data);
     textPc.jQadd(textPcDom);
 
@@ -349,7 +356,7 @@ LatexCmds.ce = P(TextBlock, function(_, super_) {
       .html(this.bondHtml[this.bond]);
   };
   _.parseBond = function (contents) {
-    if (contents.length) { 
+    if (contents.length) {
       this.bond = this.regex.exec(contents) &&
         contents.replace(this.regex, '$2');
     }
@@ -357,7 +364,7 @@ LatexCmds.ce = P(TextBlock, function(_, super_) {
   };
   _.latex = function() {
     return (
-      '\\ce{' 
+      '\\ce{'
       + (this.bond ? '\\bond{' + this.bond + '}' : this.textContents())
       + '}'
     );
@@ -368,7 +375,7 @@ LatexCmds.ce = P(TextBlock, function(_, super_) {
     if (!this.bond) {
       this.parseEnteredText(dir, cursor);
     }
-    cursor.insDirOf(dir, this); 
+    cursor.insDirOf(dir, this);
   };
   _.parseEnteredText = function(dir, cursor) {
     var adj = cursor[-dir];

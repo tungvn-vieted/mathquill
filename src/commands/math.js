@@ -514,7 +514,8 @@ MathQuill.StaticMathWithEditables = APIFnFor(P(AbstractMathQuill, function(_) {
     return this.__controller.container.find('.mq-inner-editable .mq-root-block')
       .sort(function (a, b) {
         return parseInt($(a).attr('mathquill-block-id')) >
-          parseInt($(b).attr('mathquill-block-id'));
+          parseInt($(b).attr('mathquill-block-id'))
+          ? 1: -1;
       })
       .map(function () {
         var node = Node.byId[jQuery(this).attr(mqBlockId)],

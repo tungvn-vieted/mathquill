@@ -236,10 +236,10 @@ LatexCmds.opencurlybrace = LatexCmds.lbrace = bind(VanillaSymbol, '\\lbrace ', '
 LatexCmds.closecurlybrace = LatexCmds.rbrace = bind(VanillaSymbol, '\\rbrace ', '}');
 
 //microunits
-LatexCmds.mug = bind(VanillaSymbol, '\\mug ', 'µg');
-LatexCmds.mus = bind(VanillaSymbol, '\\mus ', 'µs');
-LatexCmds.mum = bind(VanillaSymbol, '\\mum ', 'µm');
-LatexCmds.muL = bind(VanillaSymbol, '\\muL ', 'µL');
+LatexCmds.mug = bind(VanillaSymbol, '\\mug ', '&micro;g');
+LatexCmds.mus = bind(VanillaSymbol, '\\mus ', '&micro;s');
+LatexCmds.mum = bind(VanillaSymbol, '\\mum ', '&micro;m');
+LatexCmds.muL = bind(VanillaSymbol, '\\muL ', '&micro;L');
 
 //various symbols
 

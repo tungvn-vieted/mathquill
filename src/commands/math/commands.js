@@ -1630,8 +1630,9 @@ LatexCmds.vmatrix = P(Matrix, function(_, super_) {
 LatexCmds.Vmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\Vmatrix';
 
+  // Double vertical line on each side.
   _.parentheses = {
-    left: '‖',
-    right: '‖'
+    left: '&#8214;',
+    right: '&#8214;'
   };
 });

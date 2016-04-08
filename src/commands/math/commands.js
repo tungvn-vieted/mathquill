@@ -796,8 +796,32 @@ var Embed = LatexCmds.embed = P(Symbol, function(_, super_) {
   };
 });
 
+// LaTeX environments
+// Environments are delimited by an opening \begin{} and a closing
+// \end{}. Everything inside those tags will be formatted in a
+// special manner depending on the environment type.
+var Environments = {};
+
+LatexCmds.begin = P(MathCommand, function(_, super_) {
+  _.parser = function() {
+    var string = Parser.string;
+    var regex = Parser.regex;
+    var optWhitespace = Parser.optWhitespace;
+    return string('{')
+      .then(regex(/^[a-zA-Z]*/))
+      .skip(string('}'))
+      .then(function (env) {
+          return (Environments[env] ?
+            Environments[env]().parser() :
+            Parser.fail('unknown environment type: '+env)
+          ).skip(string('\\end{'+env+'}'));
+      })
+    ;
+  };
+});
+
 var Matrix =
-LatexCmds.matrix = P(MathCommand, function(_, super_) {
+Environments.matrix = P(MathCommand, function(_, super_) {
 
   var MatrixCell = P(MathBlock, function(_, super_) {
     _.init = function (column, row) {
@@ -936,69 +960,33 @@ LatexCmds.matrix = P(MathCommand, function(_, super_) {
   };
   _.htmlTemplate = _.generateHtmlTemplate(1, 1);
 
-  // Based on matrix parsing method in
-  // https://github.com/raywainman/mathquill/commit/5a9c6a04ac4e8bb1fd4f912ccbfa53a99224adf8
-  _.parser = function() {
-    var regex = Parser.regex, self = this, matrixName = this.getMatrixName(),
-      rgxContents = new RegExp("^(.*?)\\\\end{" + matrixName + "}"),
-      rgxEnd = new RegExp("\\\\end{" + matrixName + "}");
+  _.parser = function () {
+    var self = this;
+    var regex = Parser.regex;
+    var string = Parser.string;
+    var succeed = Parser.succeed;
+    var row = 0, col = 0;
 
-    return regex(rgxContents)
-    .then(function(a) {
-      // Strip out the trailing command (\end{matrix})
-      var content = a.replace(rgxEnd, '');
+    return latexMathParser.block.then(function (block) {
+      var cell = new MatrixCell(col, row);
+      block.children().adopt(cell, cell.ends[R], 0);
+      cell.adopt(self, self.ends[R], 0);
 
-      // Parse the individual blocks within the matrix
-      // Refer to http://en.wikibooks.org/wiki/LaTeX/Mathematics to learn more about the LaTeX
-      // matrix notation.
-      // Basically rows are delimited by double backslashes and columns by ampersands
-      var blocks = [];
-      var rows = content.split(delimiters.row);
-      var numRows = Math.min(rows.length, self.maximum.rows);
-      var numColumns = 0, columns, i;
-
-      // Get the (highest) number of columns, being defensive against inconsistent input
-      for(i = 0; i < numRows; i++) {
-        columns = rows[i].split(delimiters.column);
-        numColumns = Math.max(numColumns, columns.length);
-      }
-      // limit number of columns to maximum allowable
-      numColumns = Math.min(numColumns, self.maximum.columns);
-
-      for(i = 0; i < numRows; i++) {
-        // We have a row, now split it into its respective columns
-        columns = rows[i].split(delimiters.column);
-        for(var a = 0; a < numColumns; a++) {
-          // Parse the individual block, this block may contain other more complicated commands
-          // like a square root, we delegate the parsing of this to the Parser object. It returns
-          // a MathBlock object which is the object representation of the formula.
-
-          // We create a new MatrixCell which receives the MathBlock's children
-          var block = MatrixCell(a, i),
-            tmpBlock = latexMathParser.parse(columns[a] || ' ');
-
-          tmpBlock.children().adopt(block, block.ends[R], 0);
-
-          blocks.push(block);
-        }
-      }
-
-      // Tell our Latex.matrix command how big our matrix is
-      self.htmlTemplate = self.generateHtmlTemplate(numRows, numColumns);
-
-      // Attach the child blocks (each element of the matrix) to the parent matrix object
-      self.blocks = blocks;
-      for (var i = 0; i < blocks.length; i += 1) {
-        blocks[i].adopt(self, self.ends[R], 0);
-      }
-      // The block elements attached to a command are each rendered and then they replace the
-      // '&0', '&1', '&2', '&3'... placeholders that are found within the command's htmlTemplate
-
-      // Return the Latex.matrix() object to the main parser so that it knows to render this
-      // particular portion of latex in this fashion
-      return Parser.succeed(self);
+      return string(delimiters.row).then(function () {
+          row++;
+          col = 0;
+          return succeed(cell);
+        }).or(string(delimiters.column).then(function () {
+          col++;
+          return succeed(cell);
+        })).or(latexMathParser.result(cell));
+    }).many().then(function (cells) {
+      self.blocks = cells;
+      self.htmlTemplate = self.generateHtmlTemplate(row+1, col+1);
+      return succeed(self);
     });
   };
+
   // Relink all the cells after parsing
   _.finalizeTree = function() {
     var table = this.jQ.find('table');
@@ -1185,7 +1173,7 @@ LatexCmds.matrix = P(MathCommand, function(_, super_) {
   };
 });
 
-LatexCmds.pmatrix = P(Matrix, function(_, super_) {
+Environments.pmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\pmatrix';
 
   _.parentheses = {
@@ -1194,7 +1182,7 @@ LatexCmds.pmatrix = P(Matrix, function(_, super_) {
   };
 });
 
-LatexCmds.bmatrix = P(Matrix, function(_, super_) {
+Environments.bmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\bmatrix';
 
   _.parentheses = {
@@ -1203,7 +1191,7 @@ LatexCmds.bmatrix = P(Matrix, function(_, super_) {
   };
 });
 
-LatexCmds.Bmatrix = P(Matrix, function(_, super_) {
+Environments.Bmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\Bmatrix';
 
   _.parentheses = {
@@ -1212,7 +1200,7 @@ LatexCmds.Bmatrix = P(Matrix, function(_, super_) {
   };
 });
 
-LatexCmds.vmatrix = P(Matrix, function(_, super_) {
+Environments.vmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\vmatrix';
 
   _.parentheses = {
@@ -1221,7 +1209,7 @@ LatexCmds.vmatrix = P(Matrix, function(_, super_) {
   };
 });
 
-LatexCmds.Vmatrix = P(Matrix, function(_, super_) {
+Environments.Vmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\Vmatrix';
 
   _.parentheses = {

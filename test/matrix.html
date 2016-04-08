@@ -12,10 +12,11 @@
 
 <h3>MathQuill Matrix Test</h3>
 <span id="example">
-\begin{bmatrix}1&amp;2\\x&amp;y\end{bmatrix}
+\begin{Bmatrix}1&amp;2\\x&amp;y\end{Bmatrix}
 </span>
 
 <script>
+MathQuill = MathQuill.getInterface(1);
 instance = MathQuill.MathField(document.getElementById('example'));
 console.log(instance.latex());
 </script>

@@ -967,20 +967,26 @@ Environments.matrix = P(MathCommand, function(_, super_) {
     var succeed = Parser.succeed;
     var row = 0, col = 0;
 
-    return latexMathParser.block.then(function (block) {
+    var cellParser = regex(/^.+?(?=(&)|(\\\\)|(\\end))/).then(function (latex) {
       var cell = new MatrixCell(col, row);
-      block.children().adopt(cell, cell.ends[R], 0);
+      latexMathParser.parse(latex).children().adopt(cell, cell.ends[R], 0);
       cell.adopt(self, self.ends[R], 0);
+      return succeed(cell);
+    });
 
-      return string(delimiters.row).then(function () {
-          row++;
-          col = 0;
-          return succeed(cell);
-        }).or(string(delimiters.column).then(function () {
-          col++;
-          return succeed(cell);
-        })).or(latexMathParser.result(cell));
-    }).many().then(function (cells) {
+    return cellParser.then(function (cell) {
+      return string(delimiters.row).map(function () {
+        row++;
+        col=0;
+      })
+      .or(string(delimiters.column).map(function () {
+        col++;
+      }))
+      .result(cell)
+      .or(succeed(cell));
+    })
+    .many()
+    .then(function (cells) {
       self.blocks = cells;
       self.htmlTemplate = self.generateHtmlTemplate(row+1, col+1);
       return succeed(self);

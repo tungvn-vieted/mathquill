@@ -926,39 +926,70 @@ Environments.matrix = P(MathCommand, function(_, super_) {
     var rows = Math.min(this.defaults.rows, this.maximum.rows),
       columns = Math.min(this.defaults.columns, this.maximum.columns);
 
-    this.defaultHtmlTemplate = this.defaultHtmlTemplate || this.generateHtmlTemplate(rows, columns);
-    _.htmlTemplate = this.defaultHtmlTemplate;
+    // this.defaultHtmlTemplate = this.defaultHtmlTemplate || this.generateHtmlTemplate(rows, columns);
+    // _.htmlTemplate = this.defaultHtmlTemplate;
     super_.createLeftOf.call(this, cursor);
   };
   // Return string name of this matrix type - e.g. matrix, Bmatrix, pmatrix
   _.getMatrixName = function () {
     return this.ctrlSeq.replace('\\', '');
   }
-  _.generateHtmlTemplate = function(numRows, numColumns) {
-    var matrix = '<span class="mq-matrix mq-non-leaf">' + parenTemplate(this.parentheses.left);
-    matrix += '<table class="mq-non-leaf">';
+  _.html = function() {
+    var row, cells = [], trs = '', i=0;
 
-    numRows = Math.min(numRows, this.maximum.rows);
-    numColumns = Math.min(numColumns, this.maximum.columns);
-
-    var count = 0;
-    for(var row = 0; row < numRows; row++) {
-      matrix += '<tr>';
-      for(var col = 0; col < numColumns; col++) {
-        matrix += '<td>&' + count + '</td>';
-        count++;
+    // Build <tr><td>.. structure from cells
+    this.eachChild(function (cell) {
+      if (row !== cell.row) {
+        row = cell.row;
+        trs += '<tr>$tds</tr>';
+        cells[row] = [];
       }
-      matrix += '</tr>';
-    }
-    matrix += '</table>';
-    matrix += parenTemplate(this.parentheses.right) + '</span>';
-    return matrix;
+      cells[row].push('<td>&'+(i++)+'</td>');
+    });
 
-    function parenTemplate(paren) {
-      return paren ? '<span class="mq-paren mq-scaled">' + paren + '</span>' : '';
-    }
+    this.htmlTemplate =
+        '<span class="mq-matrix mq-non-leaf">'
+      +   '<span class="mq-scaled mq-paren">'
+      +     this.parentheses.left
+      +   '</span>'
+      +   '<table class="mq-non-leaf">'
+      +     trs.replace(/\$tds/g, function () {
+              return cells.shift().join('');
+            })
+      +   '</table>'
+      +   '<span class="mq-scaled mq-paren">'
+      +     this.parentheses.right
+      +   '</span>'
+      + '</span>'
+    ;
+
+    return super_.html.call(this);
   };
-  _.htmlTemplate = _.generateHtmlTemplate(1, 1);
+  // _.generateHtmlTemplate = function(numRows, numColumns) {
+  //   var matrix = '<span class="mq-matrix mq-non-leaf">' + parenTemplate(this.parentheses.left);
+  //   matrix += '<table class="mq-non-leaf">';
+
+  //   numRows = Math.min(numRows, this.maximum.rows);
+  //   numColumns = Math.min(numColumns, this.maximum.columns);
+
+  //   var count = 0;
+  //   for(var row = 0; row < numRows; row++) {
+  //     matrix += '<tr>';
+  //     for(var col = 0; col < numColumns; col++) {
+  //       matrix += '<td>&' + count + '</td>';
+  //       count++;
+  //     }
+  //     matrix += '</tr>';
+  //   }
+  //   matrix += '</table>';
+  //   matrix += parenTemplate(this.parentheses.right) + '</span>';
+  //   return matrix;
+
+  //   function parenTemplate(paren) {
+  //     return paren ? '<span class="mq-paren mq-scaled">' + paren + '</span>' : '';
+  //   }
+  // };
+  // _.htmlTemplate = _.generateHtmlTemplate(1, 1);
 
   _.parser = function () {
     var self = this;
@@ -988,7 +1019,6 @@ Environments.matrix = P(MathCommand, function(_, super_) {
     .many()
     .then(function (cells) {
       self.blocks = cells;
-      self.htmlTemplate = self.generateHtmlTemplate(row+1, col+1);
       return succeed(self);
     });
   };

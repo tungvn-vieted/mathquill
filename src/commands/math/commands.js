@@ -996,28 +996,37 @@ Environments.matrix = P(Environment, function(_, super_) {
 
   _.parser = function () {
     var self = this;
-    var regex = Parser.regex;
+    var optWhitespace = Parser.optWhitespace;
+    var string = Parser.string;
 
-    return regex(/^.*?(?=\\end)/).map(function (latex) {
-      var rows = latex.split(delimiters.row);
-      var cells = [];
-      var row;
-      for (var i=0; i<rows.length; i++) {
-        row = rows[i].split(delimiters.column);
-        for (var j=0; j<row.length; j++) {
-          cells.push(parseCell(row[j], i));
+    return optWhitespace
+    .then(string(delimiters.column)
+      .or(string(delimiters.row))
+      .or(latexMathParser.block))
+    .many()
+    .skip(optWhitespace)
+    .then(function(items) {
+      var blocks = [];
+      var row = 0;
+      self.blocks = [];
+
+      function addCell() {
+        self.blocks.push(MatrixCell(row, self, blocks));
+        blocks = [];
+      }
+
+      for (var i=0; i<items.length; i+=1) {
+        if (items[i] instanceof MathBlock) {
+          blocks.push(items[i]);
+          // Add last cell (not succeeded by a delimiter)
+          if (i+1 === items.length) addCell();
+        } else {
+          addCell();
+          if (items[i] === delimiters.row) row++1;
         }
       }
-      self.blocks = cells;
-      return self;
+      return Parser.succeed(self);
     });
-
-    function parseCell(latex, row) {
-      var cell = new MatrixCell(row);
-      latexMathParser.parse(latex).children().adopt(cell, cell.ends[R], 0);
-      cell.adopt(self, self.ends[R], 0);
-      return cell;
-    }
   };
 
   // Relink all the cells after parsing

@@ -820,8 +820,18 @@ LatexCmds.begin = P(MathCommand, function(_, super_) {
   };
 });
 
+var Environment = P(MathCommand, function(_, super_) {
+  _.template = [['\\begin{', '}'], ['\\end{', '}']];
+  _.wrappers = function () {
+    return [
+      _.template[0].join(this.envType),
+      _.template[1].join(this.envType)
+    ];
+  };
+});
+
 var Matrix =
-Environments.matrix = P(MathCommand, function(_, super_) {
+Environments.matrix = P(Environment, function(_, super_) {
 
   var MatrixCell = P(MathBlock, function(_, super_) {
     _.init = function (column, row) {
@@ -868,7 +878,7 @@ Environments.matrix = P(MathCommand, function(_, super_) {
     columns: 2
   };
 
-  _.ctrlSeq = '\\matrix';
+  _.envType = 'matrix';
 
   _.createBlocks = function() {
     var cmd = this,
@@ -898,27 +908,20 @@ Environments.matrix = P(MathCommand, function(_, super_) {
   };
 
   _.latex = function() {
-    var matrixName = this.getMatrixName(),
-      latex = '\\begin{' + matrixName + '}',
-      thisRow, row, i;
+    var latex = '';
+    var row;
 
-    for(i = 0; i < this.blocks.length; i++) {
-      thisRow = this.blocks[i].row;
-
+    this.eachChild(function (cell) {
       if (typeof row !== 'undefined') {
-        if (row !== thisRow) {
-          latex += delimiters.row;
-        } else {
-          latex += delimiters.column;
-        }
+        latex += (row !== cell.row) ?
+          delimiters.row :
+          delimiters.column;
       }
+      row = cell.row;
+      latex += cell.latex();
+    });
 
-      row = thisRow;
-      latex += this.blocks[i].latex();
-    };
-
-    latex += '\\end{' + matrixName + '}';
-    return latex;
+    return this.wrappers().join(latex);
   };
   _.createLeftOf = function(cursor) {
     this.cursor = cursor;
@@ -935,7 +938,7 @@ Environments.matrix = P(MathCommand, function(_, super_) {
     return this.ctrlSeq.replace('\\', '');
   }
   _.html = function() {
-    var row, cells = [], trs = '', i=0;
+    var row, cells = [], trs = '', =0;
 
     // Build <tr><td>.. structure from cells
     this.eachChild(function (cell) {
@@ -994,33 +997,27 @@ Environments.matrix = P(MathCommand, function(_, super_) {
   _.parser = function () {
     var self = this;
     var regex = Parser.regex;
-    var string = Parser.string;
-    var succeed = Parser.succeed;
-    var row = 0, col = 0;
 
-    var cellParser = regex(/^.+?(?=(&)|(\\\\)|(\\end))/).then(function (latex) {
-      var cell = new MatrixCell(col, row);
+    return regex(/^.*?(?=\\end)/).map(function (latex) {
+      var rows = latex.split(delimiters.row);
+      var cells = [];
+      var row;
+      for (var i=0; i<rows.length; i++) {
+        row = rows[i].split(delimiters.column);
+        for (var j=0; j<row.length; j++) {
+          cells.push(parseCell(row[j], i));
+        }
+      }
+      self.blocks = cells;
+      return self;
+    });
+
+    function parseCell(latex, row) {
+      var cell = new MatrixCell(row);
       latexMathParser.parse(latex).children().adopt(cell, cell.ends[R], 0);
       cell.adopt(self, self.ends[R], 0);
-      return succeed(cell);
-    });
-
-    return cellParser.then(function (cell) {
-      return string(delimiters.row).map(function () {
-        row++;
-        col=0;
-      })
-      .or(string(delimiters.column).map(function () {
-        col++;
-      }))
-      .result(cell)
-      .or(succeed(cell));
-    })
-    .many()
-    .then(function (cells) {
-      self.blocks = cells;
-      return succeed(self);
-    });
+      return cell;
+    }
   };
 
   // Relink all the cells after parsing
@@ -1210,7 +1207,7 @@ Environments.matrix = P(MathCommand, function(_, super_) {
 });
 
 Environments.pmatrix = P(Matrix, function(_, super_) {
-  _.ctrlSeq = '\\pmatrix';
+  _.envType = 'pmatrix';
 
   _.parentheses = {
     left: '(',
@@ -1219,7 +1216,7 @@ Environments.pmatrix = P(Matrix, function(_, super_) {
 });
 
 Environments.bmatrix = P(Matrix, function(_, super_) {
-  _.ctrlSeq = '\\bmatrix';
+  _.envType = 'bmatrix';
 
   _.parentheses = {
     left: '[',
@@ -1228,7 +1225,7 @@ Environments.bmatrix = P(Matrix, function(_, super_) {
 });
 
 Environments.Bmatrix = P(Matrix, function(_, super_) {
-  _.ctrlSeq = '\\Bmatrix';
+  _.envType = 'Bmatrix';
 
   _.parentheses = {
     left: '{',
@@ -1237,7 +1234,7 @@ Environments.Bmatrix = P(Matrix, function(_, super_) {
 });
 
 Environments.vmatrix = P(Matrix, function(_, super_) {
-  _.ctrlSeq = '\\vmatrix';
+  _.envType = 'vmatrix';
 
   _.parentheses = {
     left: '|',
@@ -1246,7 +1243,7 @@ Environments.vmatrix = P(Matrix, function(_, super_) {
 });
 
 Environments.Vmatrix = P(Matrix, function(_, super_) {
-  _.ctrlSeq = '\\Vmatrix';
+  _.envType = 'Vmatrix';
 
   _.parentheses = {
     left: '‖',

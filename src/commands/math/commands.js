@@ -833,34 +833,6 @@ var Environment = P(MathCommand, function(_, super_) {
 var Matrix =
 Environments.matrix = P(Environment, function(_, super_) {
 
-  var MatrixCell = P(MathBlock, function(_, super_) {
-    _.init = function (column, row) {
-      this.column = column;
-      this.row = row;
-      return super_.init.call(this);
-    };
-    _.keystroke = function(key, e, ctrlr) {
-      switch (key) {
-      case 'Shift-Spacebar':
-        e.preventDefault();
-        return this.parent.insertColumn(this);
-        break;
-      case 'Shift-Enter':
-        return this.parent.insertRow(this);
-        break;
-      }
-      return super_.keystroke.apply(this, arguments);
-    };
-
-    _.deleteOutOf = function(dir, cursor) {
-      var self = this, args = arguments;
-      this.parent.backspace(this, dir, cursor, function () {
-        // called when last cell gets deleted
-        return super_.deleteOutOf.apply(self, args);
-      });
-    }
-  });
-
   var delimiters = {
     column: '&',
     row: '\\\\'
@@ -869,33 +841,21 @@ Environments.matrix = P(Environment, function(_, super_) {
     left: null,
     right: null
   };
-  _.maximum = {
-    rows: 5,
-    columns: 5
-  };
-  _.defaults = {
-    rows: 2,
-    columns: 2
-  };
-
   _.envType = 'matrix';
 
   _.createBlocks = function() {
     var cmd = this,
       blocks = cmd.blocks = [],
-      prevRow, column, i = 0;
+      prevRow, i = 0;
 
     this.htmlTemplate.replace(/&\d+/g, function (match, index) {
       var row = cmd.htmlTemplate.substring(0, index).match(/<tr[^>]*>/ig).length - 1;
-      column = (prevRow === row) ? column + 1 : 0;
-
-      blocks[i] = MatrixCell(column, row);
+      blocks[i] = MatrixCell(row);
       blocks[i].adopt(cmd, cmd.ends[R], 0);
       prevRow = row;
       i++;
     });
   };
-
   _.reflow = function() {
     var blockjQ = this.jQ.children('table');
 
@@ -906,7 +866,6 @@ Environments.matrix = P(Environment, function(_, super_) {
       scale(parens, min(1 + .2*(height - 1), 1.2), 1.05*height);
     }
   };
-
   _.latex = function() {
     var latex = '';
     var row;
@@ -923,22 +882,15 @@ Environments.matrix = P(Environment, function(_, super_) {
 
     return this.wrappers().join(latex);
   };
-  _.createLeftOf = function(cursor) {
-    this.cursor = cursor;
-
-    var rows = Math.min(this.defaults.rows, this.maximum.rows),
-      columns = Math.min(this.defaults.columns, this.maximum.columns);
-
-    // this.defaultHtmlTemplate = this.defaultHtmlTemplate || this.generateHtmlTemplate(rows, columns);
-    // _.htmlTemplate = this.defaultHtmlTemplate;
-    super_.createLeftOf.call(this, cursor);
-  };
-  // Return string name of this matrix type - e.g. matrix, Bmatrix, pmatrix
-  _.getMatrixName = function () {
-    return this.ctrlSeq.replace('\\', '');
-  }
   _.html = function() {
-    var row, cells = [], trs = '', =0;
+    var cells = [], trs = '', i=0, row;
+
+    function parenHtml(paren) {
+      return (paren) ?
+          '<span class="mq-scaled mq-paren">'
+        +   paren
+        + '</span>' : '';
+    }
 
     // Build <tr><td>.. structure from cells
     this.eachChild(function (cell) {
@@ -952,48 +904,18 @@ Environments.matrix = P(Environment, function(_, super_) {
 
     this.htmlTemplate =
         '<span class="mq-matrix mq-non-leaf">'
-      +   '<span class="mq-scaled mq-paren">'
-      +     this.parentheses.left
-      +   '</span>'
+      +   parenHtml(this.parentheses.left)
       +   '<table class="mq-non-leaf">'
       +     trs.replace(/\$tds/g, function () {
               return cells.shift().join('');
             })
       +   '</table>'
-      +   '<span class="mq-scaled mq-paren">'
-      +     this.parentheses.right
-      +   '</span>'
+      +   parenHtml(this.parentheses.right)
       + '</span>'
     ;
 
     return super_.html.call(this);
   };
-  // _.generateHtmlTemplate = function(numRows, numColumns) {
-  //   var matrix = '<span class="mq-matrix mq-non-leaf">' + parenTemplate(this.parentheses.left);
-  //   matrix += '<table class="mq-non-leaf">';
-
-  //   numRows = Math.min(numRows, this.maximum.rows);
-  //   numColumns = Math.min(numColumns, this.maximum.columns);
-
-  //   var count = 0;
-  //   for(var row = 0; row < numRows; row++) {
-  //     matrix += '<tr>';
-  //     for(var col = 0; col < numColumns; col++) {
-  //       matrix += '<td>&' + count + '</td>';
-  //       count++;
-  //     }
-  //     matrix += '</tr>';
-  //   }
-  //   matrix += '</table>';
-  //   matrix += parenTemplate(this.parentheses.right) + '</span>';
-  //   return matrix;
-
-  //   function parenTemplate(paren) {
-  //     return paren ? '<span class="mq-paren mq-scaled">' + paren + '</span>' : '';
-  //   }
-  // };
-  // _.htmlTemplate = _.generateHtmlTemplate(1, 1);
-
   _.parser = function () {
     var self = this;
     var optWhitespace = Parser.optWhitespace;
@@ -1018,195 +940,202 @@ Environments.matrix = P(Environment, function(_, super_) {
       for (var i=0; i<items.length; i+=1) {
         if (items[i] instanceof MathBlock) {
           blocks.push(items[i]);
-          // Add last cell (not succeeded by a delimiter)
-          if (i+1 === items.length) addCell();
         } else {
           addCell();
-          if (items[i] === delimiters.row) row++1;
+          if (items[i] === delimiters.row) row+=1;
         }
       }
+      addCell();
       return Parser.succeed(self);
     });
   };
-
   // Relink all the cells after parsing
   _.finalizeTree = function() {
     var table = this.jQ.find('table');
-
-    if (table.length) {
-      this.relink();
-
-      // update mq-rows-<number> class on table
-      table.removeClass(function (index, classes) {
-        var toRemove = classes.match(/mq-rows-\d+/g);
-        return (toRemove && toRemove.join(' ')) || '';
-      });
-
-      table.addClass('mq-rows-' + table.find('tr').length);
-    }
+    table.toggleClass('mq-rows-1', table.find('tr').length === 1);
+    this.relink();
   };
-  // Reassign directional pointers for cursor key navigation between cells.
+  // Set up directional pointers between cells
   _.relink = function () {
-    var allCells = this.jQ.find('td');
-    var firstCellBlock = Node.byId[allCells.first().attr(mqBlockId)];
-    var lastCellBlock = Node.byId[allCells.last().attr(mqBlockId)];
-    var firstRow = allCells.eq(0).closest('tr');
-    var blocks = [];
+    var blocks = this.blocks;
+    var rows = [];
+    var row, column, cell;
 
-    allCells.each(function (cellIndex) {
-      var cellBlock = Node.byId[$(this).attr(mqBlockId)];
-      var nextCell = allCells.eq(cellIndex + 1);
-      var nextRow = $(this).closest('tr').next('tr');
-      var indexInColumn = $(this).closest('tr').index();
-      var indexInRow = $(this).index();
-      var downCell;
+    // Use a for loop rather than eachChild
+    // as we're still making sure children()
+    // is set up properly
+    for (var i=0; i<blocks.length; i+=1) {
+      cell = blocks[i];
+      if (row !== cell.row) {
+        row = cell.row;
+        rows[row] = [];
+        column = 0;
+      }
+      rows[row][column] = cell;
 
-      // set up horizontal linkage
-      if (nextCell.length) {
-        var nextCellBlock = Node.byId[nextCell.attr(mqBlockId)];
-        cellBlock[R] = nextCellBlock;
-        nextCellBlock[L] = cellBlock;
+      // Set up horizontal linkage
+      cell[R] = blocks[i+1];
+      cell[L] = blocks[i-1];
+
+      // Set up vertical linkage
+      if (rows[row-1] && rows[row-1][column]) {
+        cell.upOutOf = rows[row-1][column];
+        rows[row-1][column].downOutOf = cell;
       }
 
-      // set up vertical linkage
-      if (nextRow.length) {
-        downCell = nextRow.find('td').eq(indexInRow);
-      } else {
-        // bottom most cell links to top cell in next column via down arrow
-        downCell = firstRow.find('td').eq(indexInRow + 1);
+      column+=1;
+    }
+
+    // set start and end blocks of matrix
+    this.ends[L] = blocks[0];
+    this.ends[R] = blocks[blocks.length-1];
+  };
+  // Deleting a cell will also delete the current row and
+  // column if they are empty, and relink the matrix.
+  _.deleteCell = function (currentCell) {
+    var rows = [], columns = [], myRow = [], myColumn = [];
+    var blocks = this.blocks, row, column;
+
+    // Create arrays for cells in the current row / column
+    this.eachChild(function (cell) {
+      if (row !== cell.row) {
+        row = cell.row;
+        rows[row] = [];
+        column = 0;
       }
-      if (downCell.length) {
-        var downCellBlock = Node.byId[downCell.attr(mqBlockId)];
-        cellBlock.downOutOf = downCellBlock;
-        downCellBlock.upOutOf = cellBlock;
+      columns[column] = columns[column] || [];
+      columns[column].push(cell);
+      rows[row].push(cell);
+
+      if (cell === currentCell) {
+        myRow = rows[row];
+        myColumn = columns[column];
       }
 
-      cellBlock.column = indexInRow;
-      cellBlock.row = indexInColumn;
-      blocks.push(cellBlock);
-    });
-    // set start and end blocks of matrix - first and last cells.
-    this.ends[L] = firstCellBlock;
-    this.ends[R] = lastCellBlock;
-
-    // delete any leftover linkage to removed blocks at the beginning and end.
-    if (firstCellBlock && firstCellBlock[L]) { delete firstCellBlock[L]; }
-    if (lastCellBlock && lastCellBlock[R]) { delete lastCellBlock[R]; }
-
-    this.blocks = blocks;
-  };
-
-  // Also deletes row or column if it is empty
-  _.deleteCell = function (cell) {
-    var row = cell.jQ.closest('tr');
-    var indexInRow = cell.jQ.index();
-    var indexInColumn = row.index();
-    var rowCells = row.find('td').not(cell.jQ);
-    var colCells = this.jQ.find('tr').not(row).map(function () {
-      return $(this).find('td')[indexInRow];
-    });
-    var isLastBlock = this.jQ.find('td').length === 1;
-    var otherBlock;
-
-    function isEmpty() {
-      var cellBlock = Node.byId[$(this).attr(mqBlockId)];
-      return cellBlock.isEmpty();
-    }
-
-    if (rowCells.filter(isEmpty).length === rowCells.length && colCells.length) {
-      // row is empty (and there are other rows)
-      rowCells.remove();
-      cell.jQ.remove();
-      row.remove();
-      this.finalizeTree();
-    }
-    if (colCells.filter(isEmpty).length === colCells.length && rowCells.length) {
-      // column is empty (and there are other columns)
-      colCells.remove();
-      cell.jQ.remove();
-      this.finalizeTree();
-    }
-
-    if (!isLastBlock) {
-      indexInColumn = Math.min(indexInColumn, this.jQ.find('tr').length - 1);
-      indexInRow = Math.min(indexInRow, this.jQ.find('tr').eq(indexInColumn).find('td').length - 1);
-      otherBlock = Node.byId[this.jQ.find('tr').eq(indexInColumn).find('td').eq(indexInRow).attr(mqBlockId)];
-    }
-
-    return otherBlock;
-  };
-
-  _.addRow = function (prevRow) {
-    // limit number of rows that can be added.
-    if (this.jQ.find('tr').length >= this.maximum.rows) {
-      return;
-    }
-
-    var numCols = prevRow.find('td').length;
-    var newRow = $('<tr></tr>');
-    var newBlock, firstNewBlock;
-
-    for (var i = 0; i < numCols; i++) {
-      newBlock = MatrixCell();
-      newBlock.parent = this;
-      newBlock.jQ = $('<td class="mq-empty">').attr(mqBlockId, newBlock.id);
-      newRow.append(newBlock.jQ);
-
-      firstNewBlock = firstNewBlock || newBlock;
-    }
-    newRow.insertAfter(prevRow);
-    return firstNewBlock;
-  };
-
-  _.addColumn = function (prevCell) {
-    // limit number of columns that can be added.
-    if (prevCell.closest('tr').find('td').length >= this.maximum.columns) {
-      return;
-    }
-
-    var index = prevCell.index();
-    var rowIndex = prevCell.closest('tr').index();
-    var matrix = this;
-    var newBlock, newBlocks = [];
-
-    this.jQ.find('tr').each(function () {
-      newBlock = MatrixCell();
-      newBlock.parent = matrix;
-      newBlock.jQ = $('<td class="mq-empty">').attr(mqBlockId, newBlock.id);
-      newBlock.jQ.insertAfter($(this).find('td').eq(index));
-
-      newBlocks.push(newBlock);
+      column+=1;
     });
 
-    return newBlocks[rowIndex];
-  };
-
-  _.insertColumn = function(currentBlock) {
-    newBlock = this.addColumn(currentBlock.jQ);
-    if (newBlock) {
-      this.cursor = this.cursor || this.parent.cursor;
-      this.finalizeTree();
-      this.bubble('reflow').cursor.insAtRightEnd(newBlock);
-    }
-  };
-  _.insertRow = function(currentBlock) {
-    newBlock = this.addRow(currentBlock.jQ.closest('tr'));
-    if (newBlock) {
-      this.cursor = this.cursor || this.parent.cursor;
-      this.finalizeTree();
-      this.bubble('reflow').cursor.insAtRightEnd(newBlock);
-    }
-  };
-
-  _.backspace = function(currentBlock, dir, cursor, finalDeleteCallback) {
-    if (currentBlock.isEmpty()) {
-
-      var otherBlock = this.deleteCell(currentBlock);
-
-      if (otherBlock) {
-        cursor.insAtRightEnd(otherBlock);
+    function isEmpty(cells) {
+      var empties = [];
+      for (var i=0; i<cells.length; i+=1) {
+        if (cells[i].isEmpty()) empties.push(cells[i]);
       }
-      else {
+      return empties.length === cells.length;
+    }
+
+    function remove(cells) {
+      for (var i=0; i<cells.length; i+=1) {
+        if (blocks.indexOf(cells[i]) > -1) {
+          cells[i].remove();
+          blocks.splice(blocks.indexOf(cells[i]), 1);
+        }
+      }
+    }
+
+    if (isEmpty(myRow) && myColumn.length > 1) {
+      row = rows.indexOf(myRow);
+      // Decrease all following row numbers
+      this.eachChild(function (cell) {
+        if (cell.row > row) cell.row-=1;
+      });
+      // Dispose of cells and remove <tr>
+      remove(myRow);
+      this.jQ.find('tr').eq(row).remove();
+    }
+    if (isEmpty(myColumn) && myRow.length > 1) {
+      remove(myColumn);
+    }
+    this.finalizeTree();
+  };
+  _.addRow = function (afterCell) {
+    var previous = [], newCells = [], next = [];
+    var newRow = $('<tr></tr>'), row = afterCell.row;
+    var columns = 0, block, column;
+
+    this.eachChild(function (cell) {
+      // Cache previous rows
+      if (cell.row <= row) {
+        previous.push(cell);
+      }
+      // Work out how many columns
+      if (cell.row === row) {
+        if (cell === afterCell) column = columns;
+        columns+=1;
+      }
+      // Cache cells after new row
+      if (cell.row > row) {
+        cell.row+=1;
+        next.push(cell);
+      }
+    });
+
+    // Add new cells, one for each column
+    for (var i=0; i<columns; i+=1) {
+      block = MatrixCell(row+1);
+      block.parent = this;
+      newCells.push(block);
+
+      // Create cell <td>s and add to new row
+      block.jQ = $('<td class="mq-empty">')
+        .attr(mqBlockId, block.id)
+        .appendTo(newRow);
+    }
+
+    // Insert the new row
+    this.jQ.find('tr').eq(row).after(newRow);
+    this.blocks = previous.concat(newCells, next);
+    return newCells[column];
+  };
+  _.addColumn = function (afterCell) {
+    var rows = [], newCells = [];
+    var column, block;
+
+    // Build rows array and find new column index
+    this.eachChild(function (cell) {
+      rows[cell.row] = rows[cell.row] || [];
+      rows[cell.row].push(cell);
+      if (cell === afterCell) column = rows[cell.row].length;
+    });
+
+    // Add new cells, one for each row
+    for (var i=0; i<rows.length; i+=1) {
+      block = MatrixCell(i);
+      block.parent = this;
+      newCells.push(block);
+      rows[i].splice(column, 0, block);
+
+      block.jQ = $('<td class="mq-empty">')
+        .attr(mqBlockId, block.id);
+    }
+
+    // Add cell <td> elements in correct positions
+    this.jQ.find('tr').each(function (i) {
+      $(this).find('td').eq(column-1).after(rows[i][column].jQ);
+    });
+
+    // Flatten the rows array-of-arrays
+    this.blocks = [].concat.apply([], rows);
+    return newCells[afterCell.row];
+  };
+  _.insert = function(method, afterCell) {
+    var cellToFocus = this[method](afterCell);
+    this.cursor = this.cursor || this.parent.cursor;
+    this.finalizeTree();
+    this.bubble('reflow').cursor.insAtRightEnd(cellToFocus);
+  };
+  _.backspace = function(cell, dir, cursor, finalDeleteCallback) {
+    var dirwards = cell[dir];
+    if (cell.isEmpty()) {
+      this.deleteCell(cell);
+      while (dirwards &&
+        dirwards[dir] &&
+        this.blocks.indexOf(dirwards) === -1) {
+          dirwards = dirwards[dir];
+      }
+      if (dirwards) {
+        cursor.insAtDirEnd(-dir, dirwards);
+      }
+      if (this.blocks.length === 1 && this.blocks[0].isEmpty()) {
         finalDeleteCallback();
         this.finalizeTree();
       }
@@ -1258,4 +1187,41 @@ Environments.Vmatrix = P(Matrix, function(_, super_) {
     left: '&#8214;',
     right: '&#8214;'
   };
+});
+
+// Replacement for mathblocks inside matrix cells
+// Adds matrix-specific keyboard commands
+var MatrixCell = P(MathBlock, function(_, super_) {
+  _.init = function (row, parent, replaces) {
+    super_.init.call(this);
+    this.row = row;
+    if (parent) {
+      this.adopt(parent, parent.ends[R], 0);
+    }
+    if (replaces) {
+      for (var i=0; i<replaces.length; i++) {
+        replaces[i].children().adopt(this, this.ends[R], 0);
+      }
+    }
+  };
+  _.keystroke = function(key, e, ctrlr) {
+    switch (key) {
+    case 'Shift-Spacebar':
+      e.preventDefault();
+      return this.parent.insert('addColumn', this);
+      break;
+    case 'Shift-Enter':
+    return this.parent.insert('addRow', this);
+      break;
+    }
+    return super_.keystroke.apply(this, arguments);
+  };
+
+  _.deleteOutOf = function(dir, cursor) {
+    var self = this, args = arguments;
+    this.parent.backspace(this, dir, cursor, function () {
+      // called when last cell gets deleted
+      return super_.deleteOutOf.apply(self, args);
+    });
+  }
 });

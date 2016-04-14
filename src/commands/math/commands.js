@@ -916,7 +916,7 @@ Environments.matrix = P(Environment, function(_, super_) {
 
     return super_.html.call(this);
   };
-  _.parser = function () {
+  _.parser = function() {
     var self = this;
     var optWhitespace = Parser.optWhitespace;
     var string = Parser.string;
@@ -956,7 +956,7 @@ Environments.matrix = P(Environment, function(_, super_) {
     this.relink();
   };
   // Set up directional pointers between cells
-  _.relink = function () {
+  _.relink = function() {
     var blocks = this.blocks;
     var rows = [];
     var row, column, cell;
@@ -992,7 +992,7 @@ Environments.matrix = P(Environment, function(_, super_) {
   };
   // Deleting a cell will also delete the current row and
   // column if they are empty, and relink the matrix.
-  _.deleteCell = function (currentCell) {
+  _.deleteCell = function(currentCell) {
     var rows = [], columns = [], myRow = [], myColumn = [];
     var blocks = this.blocks, row, column;
 
@@ -1047,7 +1047,7 @@ Environments.matrix = P(Environment, function(_, super_) {
     }
     this.finalizeTree();
   };
-  _.addRow = function (afterCell) {
+  _.addRow = function(afterCell) {
     var previous = [], newCells = [], next = [];
     var newRow = $('<tr></tr>'), row = afterCell.row;
     var columns = 0, block, column;
@@ -1086,7 +1086,7 @@ Environments.matrix = P(Environment, function(_, super_) {
     this.blocks = previous.concat(newCells, next);
     return newCells[column];
   };
-  _.addColumn = function (afterCell) {
+  _.addColumn = function(afterCell) {
     var rows = [], newCells = [];
     var column, block;
 
@@ -1192,7 +1192,7 @@ Environments.Vmatrix = P(Matrix, function(_, super_) {
 // Replacement for mathblocks inside matrix cells
 // Adds matrix-specific keyboard commands
 var MatrixCell = P(MathBlock, function(_, super_) {
-  _.init = function (row, parent, replaces) {
+  _.init = function(row, parent, replaces) {
     super_.init.call(this);
     this.row = row;
     if (parent) {

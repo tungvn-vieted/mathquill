@@ -117,8 +117,8 @@ suite('latex', function() {
     assertParsesLatex('\\begin{vmatrix}x&y\\\\1&2\\end{vmatrix}');
     assertParsesLatex('\\begin{bmatrix}x&y&z&123&x^2\\\\23&s&\\sin \\theta &1&x\\\\e&h&a&1&y\\end{bmatrix}');
 
-    // Adds missing cells
-    assertParsesLatex('\\begin{Vmatrix}x&y\\\\1\\end{Vmatrix}', '\\begin{Vmatrix}x&y\\\\1&\\end{Vmatrix}');
+    // Doesn't attempt to add missing cells
+    assertParsesLatex('\\begin{Vmatrix}x&y\\\\1\\end{Vmatrix}', '\\begin{Vmatrix}x&y\\\\1\\end{Vmatrix}');
   });
 
   suite('public API', function() {

@@ -1255,7 +1255,7 @@ Environments.Vmatrix = P(Matrix, function(_, super_) {
   _.envType = 'Vmatrix';
 
   _.parentheses = {
-    left: '‖',
-    right: '‖'
+    left: '&#8214;',
+    right: '&#8214;'
   };
 });

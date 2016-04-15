@@ -159,10 +159,13 @@ function getInterface(v) {
       return this;
     };
     _.cmd = function(cmd) {
-      var ctrlr = this.__controller.notify(), cursor = ctrlr.cursor;
+      var ctrlr = this.__controller.notify(), cursor = ctrlr.cursor, env;
+      if (env = cmd && cmd.match(/\\begin{([a-z]+)}$/i)) {
+        cmd = '\\begin';
+      }
       if (/^\\[a-z]+$/i.test(cmd)) {
         cmd = cmd.slice(1);
-        var klass = LatexCmds[cmd];
+        var klass = env ? Environments[env[1]] : LatexCmds[cmd];
         if (klass) {
           cmd = klass(cmd);
           if (cursor.selection) cmd.replaces(cursor.replaceSelection());

@@ -843,6 +843,9 @@ Environments.matrix = P(Environment, function(_, super_) {
   };
   _.envType = 'matrix';
 
+  _.createBlocks = function() {
+    this.blocks = [ MatrixCell(0, this) ];
+  };
   _.reflow = function() {
     var blockjQ = this.jQ.children('table');
 

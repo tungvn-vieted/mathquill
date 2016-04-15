@@ -11,15 +11,38 @@
 <body>
 
 <h3>MathQuill Matrix Test</h3>
-<span id="example">
+
+<h4>Parse existing latex</h4>
+<span class="example" id="parse">
 \begin{Bmatrix}1&amp;2\\x&amp;y\end{Bmatrix}
 </span>
+<hr>
+
+<h4>.write() example</h4>
+<span class="example" id="write"></span>
+<hr>
+
+<h4>.cmd() / .typedText() / .keystroke() example</h4>
+<span class="example" id="cmd"></span>
+<hr>
 
 <script>
+instances = {};
 MathQuill = MathQuill.getInterface(1);
-instance = MathQuill.MathField(document.getElementById('example'));
-console.log(instance.latex());
-</script>
 
+$('.example').each(function () {
+    instances[this.id] = MathQuill.MathField(this);
+});
+
+instances.write
+	.write('\\begin{bmatrix}1&\\frac{2}{3}&4\\\\x&y&z\\end{bmatrix}');
+
+instances.cmd
+	.cmd('\\begin{Vmatrix}')
+	.typedText('x')
+	.keystroke('Shift-Spacebar')
+	.typedText('y');
+
+</script>
 </body>
 </html>

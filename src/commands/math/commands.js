@@ -840,8 +840,18 @@ Environments.matrix = P(Environment, function(_, super_) {
     left: null,
     right: null
   };
+  _.maximum = {
+    rows: 10,
+    columns: 10
+  };
   _.environment = 'matrix';
 
+  _.init = function(opts) {
+    if (opts && opts.matrixMaxSize) {
+      this.updateMaximums(opts.matrixMaxSize);
+    }
+    return super_.init.call(this);
+  };
   _.reflow = function() {
     var blockjQ = this.jQ.children('table');
 
@@ -915,11 +925,15 @@ Environments.matrix = P(Environment, function(_, super_) {
     .skip(optWhitespace)
     .then(function(items) {
       var blocks = [];
-      var row = 0;
+      var row = 0, lastRow;
       self.blocks = [];
 
       function addCell() {
-        self.blocks.push(MatrixCell(row, self, blocks));
+        if ((lastRow === row && self.canAddColumn()) ||
+          (lastRow !== row && self.canAddRow())) {
+            self.blocks.push(MatrixCell(row, self, blocks));
+            lastRow = row;
+        }
         blocks = [];
       }
 
@@ -934,6 +948,35 @@ Environments.matrix = P(Environment, function(_, super_) {
       addCell();
       return Parser.succeed(self);
     });
+  };
+  _.updateMaximums = function(opts) {
+    var maximum = {
+      rows: this.maximum.rows,
+      columns: this.maximum.columns
+    };
+    if (opts.rows !== undefined) {
+      maximum.rows = opts.rows;
+    }
+    if (opts.columns !== undefined) {
+      maximum.columns = opts.columns;
+    }
+    this.maximum = maximum;
+  };
+  _.canAddColumn = function() {
+    var lastCell = this.blocks[this.blocks.length-1];
+    var lastRow = lastCell && lastCell.row || 0;
+    var cols = 0;
+    this.eachChild(function (cell) {
+      if (cell.row === lastRow) {
+        cols+=1;
+      }
+    });
+    return cols < this.maximum.columns;
+  };
+  _.canAddRow = function() {
+    var lastCell = this.blocks[this.blocks.length-1];
+    var rows = lastCell && lastCell.row+1 || 0;
+    return rows < this.maximum.rows;
   };
   // Relink all the cells after parsing
   _.finalizeTree = function() {
@@ -1185,14 +1228,25 @@ var MatrixCell = P(MathBlock, function(_, super_) {
       }
     }
   };
+  _.updateMatrixMaximums = function(opts) {
+    if (opts.matrixMaxSize) {
+      this.parent.updateMaximums(opts.matrixMaxSize);
+    }
+  };
   _.keystroke = function(key, e, ctrlr) {
     switch (key) {
     case 'Shift-Spacebar':
       e.preventDefault();
-      return this.parent.insert('addColumn', this);
+      this.updateMatrixMaximums(ctrlr.options);
+      if (this.parent.canAddColumn()) {
+        return this.parent.insert('addColumn', this);
+      }
       break;
     case 'Shift-Enter':
-    return this.parent.insert('addRow', this);
+      this.updateMatrixMaximums(ctrlr.options);
+      if (this.parent.canAddRow()) {
+        return this.parent.insert('addRow', this);
+      }
       break;
     }
     return super_.keystroke.apply(this, arguments);
@@ -1204,4 +1258,31 @@ var MatrixCell = P(MathBlock, function(_, super_) {
       return super_.deleteOutOf.apply(self, args);
     });
   }
+});
+
+// All this does is pass the options object
+// to each matrix instance
+Controller.open(function(_) {
+  var writeLatex = _.writeLatex;
+  var renderLatexMath = _.renderLatexMath;
+  var matrixInit = Matrix.prototype.init;
+
+  // Bind options to matrices init
+  function bindMatrix(opts) {
+    if (opts.matrixMaxSize) {
+      Matrix.prototype.init = function() {
+        return matrixInit.call(this, opts);
+      };
+    } else {
+      Matrix.prototype.init = matrixInit;
+    }
+  }
+  _.writeLatex = function() {
+    bindMatrix(this.options);
+    return writeLatex.apply(this, arguments);
+  };
+  _.renderLatexMath = function() {
+    bindMatrix(this.options);
+    return renderLatexMath.apply(this, arguments);
+  };
 });

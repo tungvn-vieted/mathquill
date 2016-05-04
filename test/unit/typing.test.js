@@ -1099,6 +1099,48 @@ suite('typing with auto-replaces', function() {
       assertLatex('\\begin{matrix}a&b\\\\&d\\end{matrix}');
     });
 
+    suite('Matrix size limits', function() {
+
+      function assertMaximumSize(max) {
+        var excessColumns = (new Array(max.columns+1)).join('&');
+        assert.equal(mq.latex().split('\\\\').length, max.rows, 'The matrix is limited to '+max.rows+' rows');
+        assert.equal(mq.latex().indexOf(excessColumns), -1, 'The matrix is limited to '+max.columns+' columns');
+      }
+
+      function testSizeLimits(max) {
+        test('are enforced when user adds new rows/columns', function() {
+          mq.write('\\begin{matrix}\\end{matrix}').keystroke('Left');
+          for (var i=0; i<20; i++) {
+            mq.keystroke('Shift-Spacebar Shift-Enter');
+          }
+          assertMaximumSize(max);
+        });
+        test('are enforced when creating a new matrix', function() {
+          mq.write('\\begin{matrix}&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\\\&&&&&&&&&&&&&&&\\end{matrix}');
+          assertMaximumSize(max);
+        });
+      }
+
+      suite('from options', function() {
+        var localMax = {
+          rows: 3,
+          columns: 2
+        };
+
+        setup(function() {
+          mq = MQ.MathField($('<span></span>').appendTo('#mock')[0], {
+            matrixMaxSize: localMax
+          });
+        });
+
+        testSizeLimits(localMax);
+      });
+
+      suite('from defaults', function() {
+        testSizeLimits(Matrix.prototype.maximum);
+      });
+    });
+
     test('brackets are scaled immediately', function() {
       mq.write('\\begin{bmatrix}x\\end{bmatrix}');
       function bracketHeight() {

@@ -10,24 +10,29 @@ var scale, // = function(jQ, x, y) { ... }
 //ideas from http://github.com/louisremi/jquery.transform.js
 //see also http://msdn.microsoft.com/en-us/library/ms533014(v=vs.85).aspx
 
+  clip,
+
   forceIERedraw = noop,
   div = document.createElement('div'),
   div_style = div.style,
-  transformPropNames = {
-    transform:1,
-    WebkitTransform:1,
-    MozTransform:1,
-    OTransform:1,
-    msTransform:1
-  },
-  transformPropName;
+  transformPropName,
+  clipPropName;
 
-for (var prop in transformPropNames) {
-  if (prop in div_style) {
-    transformPropName = prop;
-    break;
+function existingProp(propNames) {
+  for (var prop in propNames) {
+    if (prop in div_style) {
+      return prop;
+    }
   }
 }
+
+transformPropName = existingProp({
+  transform:1,
+  WebkitTransform:1,
+  MozTransform:1,
+  OTransform:1,
+  msTransform:1
+});
 
 if (transformPropName) {
   scale = function(jQ, x, y) {
@@ -64,6 +69,18 @@ else {
   };
 }
 
+clipPropName = existingProp({
+  WebkitClipPath:1,
+  clipPath:1,
+  clip: 1
+});
+
+if (clipPropName) {
+  clip = function(jQ, values) {
+    jQ.css(clipPropName, 'inset('+values.join(' ')+')');
+  };
+}
+
 var Style = P(MathCommand, function(_, super_) {
   _.init = function(ctrlSeq, tagName, attrs) {
     super_.init.call(this, ctrlSeq, '<'+tagName+' '+attrs+'>&0</'+tagName+'>');
@@ -79,8 +96,26 @@ LatexCmds.mathtt = bind(Style, '\\mathtt', 'span', 'class="mq-monospace mq-font"
 //text-decoration
 LatexCmds.underline = bind(Style, '\\underline', 'span', 'class="mq-non-leaf mq-underline"');
 LatexCmds.overline = LatexCmds.bar = bind(Style, '\\overline', 'span', 'class="mq-non-leaf mq-overline"');
-LatexCmds.overrightarrow = bind(Style, '\\overrightarrow', 'span', 'class="mq-non-leaf mq-overarrow mq-arrow-right"');
-LatexCmds.overleftarrow = bind(Style, '\\overleftarrow', 'span', 'class="mq-non-leaf mq-overarrow mq-arrow-left"');
+
+var OverArrow = P(Style, function(_, super_) {
+  _.reflow = function() {
+    var width = this.jQ.width();
+    var childWidth = this.ends[R].foldChildren(0,
+      function (width, child) {
+        return width+child.jQ.outerWidth();
+      }
+    );
+    var widthDiff = width-childWidth;
+
+    if (widthDiff > 0) {
+      this.jQ.css('width', childWidth);
+      clip(this.jQ, [0, widthDiff+'px', 0, 0]);
+    }
+  };
+});
+
+LatexCmds.overrightarrow = bind(OverArrow, '\\overrightarrow', 'span', 'class="mq-non-leaf mq-overarrow mq-arrow-right"');
+LatexCmds.overleftarrow = bind(OverArrow, '\\overleftarrow', 'span', 'class="mq-non-leaf mq-overarrow mq-arrow-left"');
 
 // `\textcolor{color}{math}` will apply a color to the given math content, where
 // `color` is any valid CSS Color Value (see [SitePoint docs][] (recommended),

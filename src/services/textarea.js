@@ -109,3 +109,16 @@ Controller.open(function(_) {
     this.writeLatex(text).cursor.show();
   };
 });
+
+/********************************************************
+ * Deals with maxDepth option which limits nesting depth
+ *******************************************************/
+Controller.open(function(_) {
+  Options.p.maxDepth = undefined;
+
+  optionProcessors.maxDepth = function(depth) {
+    if (typeof depth === 'number') {
+      return depth;
+    }
+  };
+});

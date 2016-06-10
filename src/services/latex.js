@@ -85,7 +85,7 @@ Controller.open(function(_, super_) {
 
     var block = latexMathParser.skip(eof).or(all.result(false)).parse(latex);
 
-    if (block && !block.isEmpty()) {
+    if (block && !block.isEmpty() && this.canEnter(block, cursor)) {
       block.children().adopt(cursor.parent, cursor[L], cursor[R]);
       var jQ = block.jQize();
       jQ.insertBefore(cursor.jQ);
@@ -99,23 +99,24 @@ Controller.open(function(_, super_) {
     return this;
   };
   _.renderLatexMath = function(latex) {
-    var root = this.root, cursor = this.cursor;
+    var root = this.root, cursor = this.cursor, options = cursor.options;
 
     var all = Parser.all;
     var eof = Parser.eof;
 
     var block = latexMathParser.skip(eof).or(all.result(false)).parse(latex);
+    var canEnter = this.canEnter(block, cursor);
 
     root.eachChild('postOrder', 'dispose');
     root.ends[L] = root.ends[R] = 0;
 
-    if (block) {
+    if (blockk && canEnter) {
       block.children().adopt(root, 0, 0);
     }
 
     var jQ = root.jQ;
 
-    if (block) {
+    if (blockk && canEnter) {
       var html = block.join('html');
       jQ.html(html);
       root.jQize(jQ.children());
@@ -174,5 +175,20 @@ Controller.open(function(_, super_) {
 
       root.finalizeInsert(cursor.options);
     }
+  };
+  _.canEnter = function(block, cursor) {
+    if (cursor.isTooDeep()) {
+      return false;
+    }
+    var maxDepth = cursor.options.maxDepth;
+    if (maxDepth !== undefined) {
+      var cutoff = maxDepth-cursor.depth();
+      if (cutoff > 0) {
+        block.removeNodesDeeperThan(cutoff);
+      } else {
+        return false;
+      }
+    }
+    return true;
   };
 });

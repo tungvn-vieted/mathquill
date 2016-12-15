@@ -1114,11 +1114,11 @@ var UnknownCmd = P(Symbol, function(_, super_) {
 });
 
 var InnerMathField = P(MathQuill.MathField, function(_) {
-  _.init = function(root, ultimateRoot, container, opts) {
+    _.init = function(root, ultimateRoot, container, opts, editable) {
     RootBlockMixin(root);
     this.__options = opts || Options();
     var ctrlr = Controller(this, root, container);
-    ctrlr.editable = true;
+    ctrlr.editable = editable;
     root.ultimateRoot = ultimateRoot;
     // Required by StaticMathWithEditables.clear
     root.select = EditableField.prototype.select;
@@ -1161,7 +1161,7 @@ LatexCmds.MathQuillMathField = P(MathCommand, function(_, super_) {
       }
     }
 
-    InnerMathField(this.ends[L], root, this.jQ, opts);
+    InnerMathField(this.ends[L], root, this.jQ, opts, true);
     this.ends[L].keystroke = function(key, e, ctrlr) {
       var cursor = ctrlr.cursor,
         movedFocus = false;
@@ -1200,6 +1200,27 @@ LatexCmds.MathQuillMathField = P(MathCommand, function(_, super_) {
   _.blur = function() {
     return super_.blur && super_.blur.apply(this, arguments);
   }
+});
+
+LatexCmds.MathQuillVarField = P(MathCommand, function(_, super_) {
+  _.ctrlSeq = '\\MathQuillVarField';
+  _.htmlTemplate =
+    '<span class="lrn-mq-var-container">'
+    +   '<span class="mq-root-block">&0</span>'
+    + '</span>'
+  ;
+  _.latex = function(){ return '{{var:' + this.ends[L].latex() + '}}'; };
+  _.text = function(){ return this.ends[L].text(); };
+  _.finalizeTree = function() {
+    var root = Node.byId[this.jQ.closest('.mq-root-block').attr(mqBlockId)],
+    opts = root && root.controller && root.controller.API.__options || {};
+
+    InnerMathField(this.ends[L], root, this.jQ, opts, false);
+
+    this.ends[L].keystroke = function(key, e, ctrlr) {
+      e.preventDefault();
+    };
+  };
 });
 
 var Matrix =

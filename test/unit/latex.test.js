@@ -318,4 +318,18 @@ suite('latex', function() {
     testCantParse('unmatched open brace', '{', '1 * { 2 + 3', '\\frac{ \\sqrt x }{{ \\sqrt y}');
     testCantParse('unmatched \\left/\\right', '\\left ( 1 + 2 )', ' [ 1, 2 \\right ]');
   });
+
+  suite('selectable span', function() {
+    setup(function() {
+      MathQuill.StaticMath($('<span>2&lt;x</span>').appendTo('#mock')[0]);
+    });
+
+    function selectableContent() {
+      return document.querySelector('#mock .mq-selectable').textContent;
+    }
+
+    test('escapes < in textContent', function () {
+      assert.equal(selectableContent(), '$2<x$');
+    });
+  });
 });

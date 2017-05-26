@@ -35,7 +35,7 @@ function APIFnFor(APIClass) {
   return APIFn;
 }
 
-var Options = P({ maxDepth: 100 }), optionProcessors = {};
+var Options = P(), optionProcessors = {};
 MathQuill.__options = Options.p;
 
 var AbstractMathQuill = P(function(_) {
@@ -148,12 +148,10 @@ var EditableField = MathQuill.EditableField = P(AbstractMathQuill, function(_) {
   };
   _.cmd = function(cmd) {
     var ctrlr = this.__controller.notify(), cursor = ctrlr.cursor;
-    if (/^\\[a-z]+$/i.test(cmd)) {
+    if (/^\\[a-z]+$/i.test(cmd) && !cursor.isTooDeep()) {
       cmd = cmd.slice(1);
       var klass = LatexCmds[cmd] || UnknownCmd;
       cmd = klass(cmd);
-      // preventing creating too many nested symbols
-      if (cursor.tooDeep()) return false;
       if (cursor.selection) cmd.replaces(cursor.replaceSelection());
       cmd.createLeftOf(cursor.show());
       // if (cmd instanceof UnknownCmd) /* TODO: API needs better error reporting */;

@@ -1007,17 +1007,6 @@ suite('typing with auto-replaces', function() {
     });
   });
 
-  suite('max depth option', function() {
-    setup(function() {
-      mq = MathQuill.MathField($('<span></span>').appendTo('#mock')[0], { maxDepth: 2 });
-    });
-
-    test('quietly refuses to enter math deeper than maxDepth', function(){
-      mq.typedText('\\sqrt \\sqrt \\sqrt \\sqrt x');
-      assertLatex('\\sqrt{\\ \\sqrt{ }}');
-    });
-  });
-
   suite('polyatomic SupSub', function() {
     var valid = ['x_x{}^y', 'x_{ }{}^{ }', 'x_{x+123}{}^y', 'x_x{}^{y+123}', 'x_{x+123}{}^y'];
 

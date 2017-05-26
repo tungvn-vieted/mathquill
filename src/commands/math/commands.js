@@ -402,7 +402,7 @@ var SupSub = P(MathCommand, function(_, super_) {
         if (this.parent.supsub === 'sub' && this.parent.sub) {
             var supsub = this.parent;
             // setting correct class and flag for SupSub
-            supsub.polyatomic = true;
+            supsub.polyatomic = this.parent.sub.latex().length > 0;
             supsub.polyatomicClass();
             return;
         }
@@ -526,7 +526,7 @@ LatexCmds._ = P(SupSub, function(_, super_) {
     var optWhitespace = Parser.optWhitespace;
     var self = this;
 
-    return optWhitespace.then(regex(/^([^{}]|{.*}){}/)).map(function (latex) {
+    return optWhitespace.then(regex(/^([^{}]|{[^}{]*}){}/)).map(function (latex) {
       // create our mathblock, removing the '{}'
       self.blocks = [ latexMathParser.parse(latex.replace(/{}$/, '')) ];
       self.blocks[0].adopt(self, self.ends[R], 0);

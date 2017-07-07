@@ -1007,6 +1007,58 @@ Environments.matrix = P(Environment, function(_, super_) {
     table.toggleClass('mq-rows-1', table.find('tr').length === 1);
     this.relink();
   };
+  _.upInto = function(dir, cursor) {
+    var rowSize = this.getRowSize();
+    if (cursor.parent.parent === this) {
+      // We're inside the matrix.
+      var i = this.blocks.indexOf(cursor.parent);
+      if (dir === L) {
+        // If we're on the left edge and moving left, we should exit.
+        return i % rowSize === 0;
+      } else {
+        // If we're on the right edge and moving right, we should exit.
+        return (i + 1) % rowSize == 0;
+      }
+    }
+    // Otherwise, we must be about to enter the matrix.
+    if (dir === L) {
+      return this.blocks[rowSize - 1];
+    } else {
+      return this.blocks[0];
+    }
+  }
+  _.downInto = function(dir, cursor) {
+    var rowSize = this.getRowSize();
+    if (cursor.parent.parent === this) {
+      // We're inside the matrix.
+      var i = this.blocks.indexOf(cursor.parent);
+      if (dir === L) {
+        // If we're on the left edge and moving left, we should exit.
+        return i % rowSize === 0;
+      } else {
+        // If we're on the right edge and moving right, we should exit.
+        return (i + 1) % rowSize == 0;
+      }
+    }
+    // Otherwise, we must be about to enter the matrix.
+    if (dir === L) {
+      return this.blocks[this.blocks.length - 1];
+    } else {
+      return this.blocks[this.blocks.length - rowSize];
+    }
+  }
+
+  _.getRowSize = function() {
+    var cell;
+    for (var i=0; i<this.blocks.length; i++) {
+      cell = this.blocks[i];
+      if (cell.row === 1) {
+        return i;
+      }
+    }
+    return this.blocks.length;
+  }
+
   // Set up directional pointers between cells
   _.relink = function() {
     var blocks = this.blocks;

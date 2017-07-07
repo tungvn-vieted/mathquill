@@ -105,6 +105,9 @@ var MathCommand = P(MathElement, function(_, super_) {
   // the cursor
   _.moveTowards = function(dir, cursor, updown) {
     var updownInto = updown && this[updown+'Into'];
+    if (typeof updownInto === 'function') {
+      updownInto = updownInto.call(this, dir, cursor);
+    }
     cursor.insAtDirEnd(-dir, updownInto || this.ends[-dir]);
   };
   _.deleteTowards = function(dir, cursor) {
@@ -377,6 +380,9 @@ var MathBlock = P(MathElement, function(_, super_) {
   // the cursor
   _.moveOutOf = function(dir, cursor, updown) {
     var updownInto = updown && this.parent[updown+'Into'];
+    if (typeof updownInto === 'function') {
+      updownInto = updownInto.call(this.parent, dir, cursor);
+    }
     if (!updownInto && this[dir]) cursor.insAtDirEnd(-dir, this[dir]);
     else cursor.insDirOf(dir, this.parent);
   };

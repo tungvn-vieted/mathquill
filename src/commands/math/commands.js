@@ -1009,10 +1009,9 @@ Environments.matrix = P(Environment, function(_, super_) {
   };
   // Enter the matrix at the top or bottom row if updown is configured.
   _.getEntryPoint = function(dir, cursor, updown) {
-    var rowSize = this.getRowSize();
     if (updown === 'up') {
       if (dir === L) {
-        return this.blocks[rowSize - 1];
+        return this.blocks[this.rowSize - 1];
       } else {
         return this.blocks[0];
       }
@@ -1021,7 +1020,7 @@ Environments.matrix = P(Environment, function(_, super_) {
       if (dir === L) {
         return this.blocks[this.blocks.length - 1];
       } else {
-        return this.blocks[this.blocks.length - rowSize];
+        return this.blocks[this.blocks.length - this.rowSize];
       }
     } else {
       pray("Invalid value for updown '" + updown + "'", false);
@@ -1029,15 +1028,14 @@ Environments.matrix = P(Environment, function(_, super_) {
   };
   // Exit the matrix at the first and last columns if updown is configured.
   _.atExitPoint = function(dir, cursor) {
-      var rowSize = this.getRowSize();
       // Which block are we in?
       var i = this.blocks.indexOf(cursor.parent);
       if (dir === L) {
         // If we're on the left edge and moving left, we should exit.
-        return i % rowSize === 0;
+        return i % this.rowSize === 0;
       } else {
         // If we're on the right edge and moving right, we should exit.
-        return (i + 1) % rowSize == 0;
+        return (i + 1) % this.rowSize == 0;
       }
   };
   _.moveTowards = function(dir, cursor, updown) {
@@ -1045,22 +1043,15 @@ Environments.matrix = P(Environment, function(_, super_) {
     cursor.insAtDirEnd(-dir, entryPoint || this.ends[-dir]);
   };
 
-  _.getRowSize = function() {
-    var cell;
-    for (var i=0; i<this.blocks.length; i++) {
-      cell = this.blocks[i];
-      if (cell.row === 1) {
-        return i;
-      }
-    }
-    return this.blocks.length;
-  }
-
   // Set up directional pointers between cells
   _.relink = function() {
     var blocks = this.blocks;
     var rows = [];
     var row, column, cell;
+
+    // The row size will be used by other functions down the track.
+    // Begin by assuming we're a one-row matrix, and we'll overwrite this if we find another row.
+    this.rowSize = blocks.length;
 
     // Use a for loop rather than eachChild
     // as we're still making sure children()
@@ -1068,6 +1059,10 @@ Environments.matrix = P(Environment, function(_, super_) {
     for (var i=0; i<blocks.length; i+=1) {
       cell = blocks[i];
       if (row !== cell.row) {
+        if (cell.row === 1) {
+          // We've just finished iterating the first row.
+          this.rowSize = column;
+        }
         row = cell.row;
         rows[row] = [];
         column = 0;

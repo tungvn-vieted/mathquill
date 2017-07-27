@@ -1007,10 +1007,30 @@ Environments.matrix = P(Environment, function(_, super_) {
     table.toggleClass('mq-rows-1', table.find('tr').length === 1);
     this.relink();
   };
-  _.upInto = function(dir, cursor) {
+  // Enter the matrix at the top or bottom row if updown is configured.
+  _.getEntryPoint = function(dir, cursor, updown) {
     var rowSize = this.getRowSize();
-    if (cursor.parent.parent === this) {
-      // We're inside the matrix.
+    if (updown === 'up') {
+      if (dir === L) {
+        return this.blocks[rowSize - 1];
+      } else {
+        return this.blocks[0];
+      }
+    } else if (updown === 'down') {
+      // Otherwise, we must be about to enter the matrix.
+      if (dir === L) {
+        return this.blocks[this.blocks.length - 1];
+      } else {
+        return this.blocks[this.blocks.length - rowSize];
+      }
+    } else {
+      pray("Invalid value for updown '" + updown + "'", false);
+    }
+  };
+  // Exit the matrix at the first and last columns if updown is configured.
+  _.atExitPoint = function(dir, cursor) {
+      var rowSize = this.getRowSize();
+      // Which block are we in?
       var i = this.blocks.indexOf(cursor.parent);
       if (dir === L) {
         // If we're on the left edge and moving left, we should exit.
@@ -1019,34 +1039,11 @@ Environments.matrix = P(Environment, function(_, super_) {
         // If we're on the right edge and moving right, we should exit.
         return (i + 1) % rowSize == 0;
       }
-    }
-    // Otherwise, we must be about to enter the matrix.
-    if (dir === L) {
-      return this.blocks[rowSize - 1];
-    } else {
-      return this.blocks[0];
-    }
-  }
-  _.downInto = function(dir, cursor) {
-    var rowSize = this.getRowSize();
-    if (cursor.parent.parent === this) {
-      // We're inside the matrix.
-      var i = this.blocks.indexOf(cursor.parent);
-      if (dir === L) {
-        // If we're on the left edge and moving left, we should exit.
-        return i % rowSize === 0;
-      } else {
-        // If we're on the right edge and moving right, we should exit.
-        return (i + 1) % rowSize == 0;
-      }
-    }
-    // Otherwise, we must be about to enter the matrix.
-    if (dir === L) {
-      return this.blocks[this.blocks.length - 1];
-    } else {
-      return this.blocks[this.blocks.length - rowSize];
-    }
-  }
+  };
+  _.moveTowards = function(dir, cursor, updown) {
+    var entryPoint = updown && this.getEntryPoint(dir, cursor, updown);
+    cursor.insAtDirEnd(-dir, entryPoint || this.ends[-dir]);
+  };
 
   _.getRowSize = function() {
     var cell;
@@ -1348,5 +1345,11 @@ var MatrixCell = P(MathBlock, function(_, super_) {
       // called when last cell gets deleted
       return super_.deleteOutOf.apply(self, args);
     });
-  }
+  };
+  _.moveOutOf = function(dir, cursor, updown) {
+    var atExitPoint = updown && this.parent.atExitPoint(dir, cursor);
+    // Step out of the matrix if we've moved past an edge column
+    if (!atExitPoint && this[dir]) cursor.insAtDirEnd(-dir, this[dir]);
+    else cursor.insDirOf(dir, this.parent);
+  };
 });

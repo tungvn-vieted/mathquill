@@ -1002,7 +1002,7 @@ Environments.matrix = P(Environment, function(_, super_) {
           blocks.push(items[i]);
         } else {
           addCell();
-          if (items[i] === this.delimiters.row) row+=1;
+          if (items[i] === self.delimiters.row) row+=1;
         }
       }
       addCell();

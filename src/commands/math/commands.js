@@ -1024,15 +1024,12 @@ Environments.matrix = P(Environment, function(_, super_) {
       } else {
         return this.blocks[0];
       }
-    } else if (updown === 'down') {
-      // Otherwise, we must be about to enter the matrix.
+    } else { // updown === 'down'
       if (dir === L) {
         return this.blocks[this.blocks.length - 1];
       } else {
         return this.blocks[this.blocks.length - this.rowSize];
       }
-    } else {
-      pray("Invalid value for updown '" + updown + "'", false);
     }
   };
   // Exit the matrix at the first and last columns if updown is configured.
@@ -1109,10 +1106,6 @@ Environments.matrix = P(Environment, function(_, super_) {
     }
 
     maxLength = Math.max.apply(null, lengths);
-
-	// Record the row size as it's useful for determining which edge of the matrix we're on.
-    this.rowSize = maxLength;
-
     if (maxLength !== Math.min.apply(null, lengths)) {
       // Pad shorter rows to correct length
       for (i=0; i<rows.length; i+=1) {

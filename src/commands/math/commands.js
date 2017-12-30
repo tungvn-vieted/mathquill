@@ -863,7 +863,7 @@ LatexCmds.begin = P(MathCommand, function(_, super_) {
     var string = Parser.string;
     var regex = Parser.regex;
     return string('{')
-      .then(regex(/^[a-z*]+/i))  // LaTex uses * as a convention for alternative forms of a command, usually 'without automatic numbering'
+      .then(regex(/^[a-z]+\*?/i))  // LaTex uses * as a convention for alternative forms of a command, usually 'without automatic numbering'
       .skip(string('}'))
       .then(function (env) {
           return (Environments[env] ?
@@ -1321,7 +1321,7 @@ Environments.Vmatrix = P(Matrix, function(_, super_) {
 // differently in latex. Nevertheless, we want it to render as a table so it's convenient to extend Matrix.
 Environments['align*'] = P(Matrix, function (_, super_) {
   _.environment = 'align*';
-  _.extraTableClasses = 'rcl';
+  _.extraTableClasses = 'mq-rcl';
   _.createBlocks = function() {
     this.blocks = [
       MatrixCell(0, this),

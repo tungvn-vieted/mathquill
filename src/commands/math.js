@@ -444,6 +444,8 @@ var MathBlock = P(MathElement, function(_, super_) {
       return Digit(ch);
     else if (cons = CharCmds[ch] || LatexCmds[ch])
       return cons(ch);
+    else if (LrnDynamicVar.prototype.matches(ch))
+      return LrnDynamicVar(ch);
     else
       return VanillaSymbol(ch);
   };

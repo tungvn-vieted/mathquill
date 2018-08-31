@@ -1235,25 +1235,60 @@ LatexCmds.MathQuillMathField = P(MathCommand, function(_, super_) {
   }
 });
 
-LatexCmds.MathQuillVarField = P(MathCommand, function(_, super_) {
-  _.ctrlSeq = '\\MathQuillVarField';
-  _.htmlTemplate =
-    '<span class="lrn-mq-var-container">'
-    +   '<span class="mq-root-block">&0</span>'
-    + '</span>'
-  ;
-  _.latex = function(){ return '{{var:' + this.ends[L].latex() + '}}'; };
-  _.text = function(){ return this.ends[L].text(); };
-  _.finalizeTree = function() {
-    var root = Node.byId[this.jQ.closest('.mq-root-block').attr(mqBlockId)],
-    opts = root && root.controller && root.controller.API.__options || {};
+/**
+ * A custom symbol from Learnosity to represent dynamic variables that appear in
+ * the latex in the format {{var:foo}} where foo is the variable name.
+ *
+ * Using curly brackets meant we had to hijack the root parser in latexMathParser
+ * above, otherwise the curlied will just be parsed as uneccessary nested
+ * mathblocks and removed.
+ */
+var LrnDynamicVar = P(Node, function(_, super_) {
+  var varNamePattern = '[a-zA-Z _]+';
+  var varNameRgx = new RegExp('^' + varNamePattern);
+  var fullNameRgx = new RegExp('^{{var:(' + varNamePattern + ')}}$');
 
-    InnerMathField(this.ends[L], root, this.jQ, opts, false);
-
-    this.ends[L].keystroke = function(key, e, ctrlr) {
-      e.preventDefault();
-    };
+  _.matches = function(str) {
+    return str.match(fullNameRgx);
   };
+  _.init = function(text) {
+    super_.init.call(this);
+    if (text) {
+      TextPiece(this.matches(text)[1]).adopt(this, 0, 0);
+    }
+  };
+  _.html = function() {
+    return (
+        '<span class="lrn-mq-dynamic-var" mathquill-command-id='+this.id+'>'
+      +   '<span class="lrn-mq-dynamic-var-name">'
+      +     this.textContents()
+      +   '</span>'
+      + '</span>'
+    );
+  };
+  _.textContents = function() {
+    return this.foldChildren('', function(text, child) {
+      return text + child.text;
+    });
+  };
+  _.latex =
+  _.text = function() {
+    return '{{var:' + this.textContents() + '}}';
+  };
+  _.parser = function() {
+    var regex = Parser.regex;
+    var self = this;
+
+    return regex(varNameRgx).then(function (varName) {
+      TextPiece(varName).adopt(self, 0, 0);
+      return Parser.succeed(self);
+    });
+  };
+  _.moveTowards = Symbol.prototype.moveTowards;
+  _.deleteTowards = Symbol.prototype.deleteTowards;
+  _.seek = Symbol.prototype.seek;
+  _.blur = MathBlock.prototype.blur;
+  _.select = Symbol.prototype.select;
 });
 
 /*

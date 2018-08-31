@@ -73,7 +73,8 @@ var latexMathParser = (function() {
   ;
 
   // Parsers yielding MathBlocks
-  var mathGroup = string('{').then(function() { return mathSequence; }).skip(string('}'));
+  var lrnDynamicVar = string('{{var:').then(function () { return LrnDynamicVar().parser(); }).skip(string('}}')).map(commandToBlock);
+  var mathGroup = lrnDynamicVar.or(string('{').then(function() { return mathSequence; }).skip(string('}')));
   var mathBlock = optWhitespace.then(mathGroup.or(command.map(commandToBlock)));
   var mathSequence = mathBlock.many().map(joinBlocks).skip(optWhitespace);
 

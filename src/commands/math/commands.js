@@ -942,11 +942,11 @@ var Bracket = P(P(MathCommand, DelimsMixin), function(_, super_) {
     this.htmlTemplate = // be set by createLeftOf or parser
         '<span class="mq-non-leaf">'
       +   '<span class="mq-scaled mq-paren'+(this.side === R ? ' mq-ghost' : '')+'">'
-      +     this.sides[L].ch
+      +     (this.sides[L].ch === '.' ? ' ' : this.sides[L].ch)
       +   '</span>'
       +   '<span class="mq-non-leaf">&0</span>'
       +   '<span class="mq-scaled mq-paren'+(this.side === L ? ' mq-ghost' : '')+'">'
-      +     this.sides[R].ch
+      +     (this.sides[R].ch === '.' ? ' ' : this.sides[R].ch)
       +   '</span>'
       + '</span>'
     ;
@@ -1103,12 +1103,12 @@ LatexCmds.left = P(MathCommand, function(_) {
     var succeed = Parser.succeed;
     var optWhitespace = Parser.optWhitespace;
 
-    return optWhitespace.then(regex(/^(?:[([|]|\\\{)/))
+    return optWhitespace.then(regex(/^(?:[([|\.]|\\\{)/))
       .then(function(ctrlSeq) { // TODO: \langle, \rangle
         var open = (ctrlSeq.charAt(0) === '\\' ? ctrlSeq.slice(1) : ctrlSeq);
         return latexMathParser.then(function (block) {
           return string('\\right').skip(optWhitespace)
-            .then(regex(/^(?:[\])|]|\\\})/)).map(function(end) {
+            .then(regex(/^(?:[\])|\.]|\\\})/)).map(function(end) {
               var close = (end.charAt(0) === '\\' ? end.slice(1) : end);
               var cmd = Bracket(0, open, close, ctrlSeq, end);
               cmd.blocks = [ block ];

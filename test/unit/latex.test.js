@@ -89,6 +89,15 @@ suite('latex', function() {
     assertParsesLatex('\\left ( 123 \\right ) ', '\\left(123\\right)');
   });
 
+  test('invisible brackets', function() {
+    assertParsesLatex('\\left(\\right.');
+    assertParsesLatex('\\left.\\right)');
+    assertParsesLatex('\\left[\\right.');
+    assertParsesLatex('\\left.\\right]');
+    assertParsesLatex('\\left\\{\\right.');
+    assertParsesLatex('\\left.\\right\\}');
+  });
+
   test('escaped whitespace', function() {
     assertParsesLatex('\\ ', '\\ ');
     assertParsesLatex('\\      ', '\\ ');
@@ -115,6 +124,9 @@ suite('latex', function() {
 
     // Parses array alignment
     assertParsesLatex('\\begin{array}{rcl}1234&xyz&abc\\end{array}');
+
+    // 'System of equations/inequalities' incorporating array
+    assertParsesLatex('\\left\\{\\begin{array}3x+5y+z\\\\7x-2y+4z\\\\-6x+3y+2z\\end{array}\\right.');
   });
 
   test('compound symbols beginning with \\not', function() {

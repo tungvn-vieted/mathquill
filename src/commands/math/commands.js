@@ -1445,6 +1445,7 @@ Environments.matrix = P(MathCommand, function(_, super_) {
     return this.ctrlSeq.replace('\\', '');
   }
   _.generateHtmlTemplate = function(numRows, numColumns) {
+    var self = this;
     var matrix = '<span class="mq-matrix mq-non-leaf">' + parenTemplate(this.parentheses.left);
     matrix += '<table class="mq-non-leaf">';
 
@@ -1455,7 +1456,7 @@ Environments.matrix = P(MathCommand, function(_, super_) {
     for(var row = 0; row < numRows; row++) {
       matrix += '<tr>';
       for(var col = 0; col < numColumns; col++) {
-        matrix += '<td>&' + count + '</td>';
+        matrix += '<td' + columnClass(col) +'>&' + count + '</td>';
         count++;
       }
       matrix += '</tr>';
@@ -1466,6 +1467,11 @@ Environments.matrix = P(MathCommand, function(_, super_) {
 
     function parenTemplate(paren) {
       return paren ? '<span class="mq-paren mq-scaled">' + paren + '</span>' : '';
+    }
+
+    function columnClass(col) {
+      var classStr = self.getColumnClass && self.getColumnClass(col);
+      return classStr ? (' class="' + classStr + '"') : '';
     }
   };
   _.htmlTemplate = _.generateHtmlTemplate(1, 1);
@@ -1717,6 +1723,43 @@ Environments.matrix = P(MathCommand, function(_, super_) {
       this.bubble('edited');
     }
   };
+});
+
+Environments.array = P(Matrix, function(_, super_) {
+  _.ctrlSeq = '\\array';
+  _.defaults = {
+    rows: 2,
+    columns: 1
+  };
+  // Support an optional expression like '{rcl}' specifying
+  // alignment of cell contents
+  _.parser = function() {
+    var regex = Parser.regex;
+    var string = Parser.string;
+    var self = this;
+
+    return string('{')
+      .then(regex(/^[rcl]+/))
+      .then(function (alignments) {
+        self.alignments = alignments;
+          return string('}').then(super_.parser.call(self));
+        })
+        .or(super_.parser.call(self));
+  };
+  // Returns a classname like "mq-array-column-l"
+  _.getColumnClass = function(col) {
+    if (this.alignments && this.alignments.length > col) {
+      return 'mq-array-column-' + this.alignments.charAt(col);
+    }
+  };
+  _.latex = function() {
+    var latex = super_.latex.call(this);
+    var begin = '\\begin{' + this.getMatrixName() + '}';
+
+    return this.alignments ?
+      latex.replace(begin, begin + '{' + this.alignments + '}') :
+      latex;
+  }
 });
 
 LatexCmds.pmatrix =

@@ -1267,6 +1267,31 @@ suite('typing with auto-replaces', function() {
         'matrix bracket height should be increased when new row is added');
     });
   });
+  suite('Arrays', function() {
+    test('simple array can be added via write()', function() {
+      mq.write('\\begin{array}x\\end{array}');
+      assertLatex('\\begin{array}x\\end{array}');
+    });
+
+    test('array with alignment can be added via write()', function() {
+      mq.write('\\begin{array}{rcl}1&2&3\\end{array}');
+      assertLatex('\\begin{array}{rcl}1&2&3\\end{array}');
+    });
+
+    test('array can be added via cmd and defaults to 1 column, 2 rows', function() {
+      mq.cmd('\\array');
+      assertLatex('\\begin{array}\\\\\\end{array}');
+    });
+
+    test('array alignment classes are set properly', function() {
+      var alignments = 'rcl'
+      mq.write('\\begin{array}{' + alignments + '}1&2&3\\end{array}');
+
+      $(mq.el()).find('td').each(function (i, el) {
+        assert.ok(el.classList.contains('mq-array-column-' + alignments[i]));
+      });
+    });
+  });
   suite('Chemistry Symbols', function() {
     test('add bond via mq.write', function() {
       mq.write('\\ce{\\bond{#}}');

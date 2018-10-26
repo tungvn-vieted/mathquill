@@ -102,15 +102,19 @@ suite('latex', function() {
                       '\\text{apples}\\ne \\text{oranges}');
   });
 
-  test('matrices', function() {
+  test('matrices and arrays', function() {
     assertParsesLatex('\\begin{matrix}x\\end{matrix}');
     assertParsesLatex('\\begin{pmatrix}x\\end{pmatrix}');
     assertParsesLatex('\\begin{Bmatrix}x\\end{Bmatrix}');
     assertParsesLatex('\\begin{vmatrix}x&y\\\\1&2\\end{vmatrix}');
     assertParsesLatex('\\begin{bmatrix}x&y&z&123&x^2\\\\23&s&\\sin \\theta &1&x\\\\e&h&a&1&y\\end{bmatrix}');
+    assertParsesLatex('\\begin{array}1&2&3\\end{array}');
 
     // Adds missing cells
     assertParsesLatex('\\begin{Vmatrix}x&y\\\\1\\end{Vmatrix}', '\\begin{Vmatrix}x&y\\\\1&\\end{Vmatrix}');
+
+    // Parses array alignment
+    assertParsesLatex('\\begin{array}{rcl}1234&xyz&abc\\end{array}');
   });
 
   test('compound symbols beginning with \\not', function() {

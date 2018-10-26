@@ -36,12 +36,10 @@ var latexMathParser = (function() {
   var controlSequence =
     regex(/^[^\\a-eg-zA-Z]/) // hotfix #164; match MathBlock::write
     .or(string('\\').then(
-      regex(/^begin\{.?matrix\}/)
-      .or(regex(/^[a-z]+/i))
+      regex(/^[a-z]+/i)
       .or(regex(/^\s+/).result(' '))
       .or(any)
     )).then(function(ctrlSeq) {
-      ctrlSeq = ctrlSeq.replace(/^begin\{(.?matrix)\}$/, '$1');
       var cmdKlass = LatexCmds[ctrlSeq];
 
       if (cmdKlass) {
@@ -54,7 +52,7 @@ var latexMathParser = (function() {
   ;
 
   var unknown =
-    string('\\').then(regex(/^\w+/))
+    string('\\').then(regex(/^(?!end\b)\w+/)) // exclude \end; it's used in Environments
     .then(function(ctrlSeq) {
       if (!LatexCmds[ctrlSeq]) {
         return UnknownCmd(ctrlSeq).parser();

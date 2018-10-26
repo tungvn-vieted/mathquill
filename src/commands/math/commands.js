@@ -1304,8 +1304,34 @@ LatexCmds.MathQuillResponseContainerIcon = P(MathCommand, function (_, super_) {
   _.text = function(){ return this.ends[L].text(); };
 });
 
+// LaTeX environments
+// Environments are delimited by an opening \begin{} and a closing
+// \end{}. Everything inside those tags will be formatted in a
+// special manner depending on the environment type.
+var Environments = {};
+
+LatexCmds.begin = P(MathCommand, function(_, super_) {
+  _.parser = function() {
+    var string = Parser.string;
+    var regex = Parser.regex;
+    return string('{')
+      .then(regex(/^[a-z]+\*?/i))  // LaTex uses * as a convention for alternative forms of a command, usually 'without automatic numbering'
+      .skip(string('}'))
+      .then(function (env) {
+          return (Environments[env] ?
+            Environments[env]().parser() :
+            Parser.fail('unknown environment type: '+env)
+          );
+          // The terminating expression \end{environmentName} is currently
+          // handled inside the parser for the specific environment (matrix etc)
+      })
+    ;
+  };
+});
+
 var Matrix =
-LatexCmds.matrix = P(MathCommand, function(_, super_) {
+LatexCmds.matrix =
+Environments.matrix = P(MathCommand, function(_, super_) {
 
   var MatrixCell = P(MathBlock, function(_, super_) {
     _.init = function (column, row) {
@@ -1693,7 +1719,8 @@ LatexCmds.matrix = P(MathCommand, function(_, super_) {
   };
 });
 
-LatexCmds.pmatrix = P(Matrix, function(_, super_) {
+LatexCmds.pmatrix =
+Environments.pmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\pmatrix';
 
   _.parentheses = {
@@ -1702,7 +1729,8 @@ LatexCmds.pmatrix = P(Matrix, function(_, super_) {
   };
 });
 
-LatexCmds.bmatrix = P(Matrix, function(_, super_) {
+LatexCmds.bmatrix =
+Environments.bmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\bmatrix';
 
   _.parentheses = {
@@ -1711,7 +1739,8 @@ LatexCmds.bmatrix = P(Matrix, function(_, super_) {
   };
 });
 
-LatexCmds.Bmatrix = P(Matrix, function(_, super_) {
+LatexCmds.Bmatrix =
+Environments.Bmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\Bmatrix';
 
   _.parentheses = {
@@ -1720,7 +1749,8 @@ LatexCmds.Bmatrix = P(Matrix, function(_, super_) {
   };
 });
 
-LatexCmds.vmatrix = P(Matrix, function(_, super_) {
+LatexCmds.vmatrix =
+Environments.vmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\vmatrix';
 
   _.parentheses = {
@@ -1729,7 +1759,8 @@ LatexCmds.vmatrix = P(Matrix, function(_, super_) {
   };
 });
 
-LatexCmds.Vmatrix = P(Matrix, function(_, super_) {
+LatexCmds.Vmatrix =
+Environments.Vmatrix = P(Matrix, function(_, super_) {
   _.ctrlSeq = '\\Vmatrix';
 
   // Double vertical line on each side.

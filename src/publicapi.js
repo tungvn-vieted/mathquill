@@ -150,7 +150,7 @@ var EditableField = MathQuill.EditableField = P(AbstractMathQuill, function(_) {
     var ctrlr = this.__controller.notify(), cursor = ctrlr.cursor;
     if (/^\\[a-z]+$/i.test(cmd) && !cursor.isTooDeep()) {
       cmd = cmd.slice(1);
-      var klass = LatexCmds[cmd] || UnknownCmd;
+      var klass = LatexCmds[cmd] || Environments[cmd] || UnknownCmd;
       cmd = klass(cmd);
       if (cursor.selection) cmd.replaces(cursor.replaceSelection());
       cmd.createLeftOf(cursor.show());

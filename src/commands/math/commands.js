@@ -1334,7 +1334,8 @@ var MatrixCell = P(MathBlock, function(_, super_) {
       return this.parent.insert('addColumn', this);
       break;
     case 'Shift-Enter':
-    return this.parent.insert('addRow', this);
+      e.preventDefault();
+      return this.parent.insert('addRow', this);
       break;
     }
     return super_.keystroke.apply(this, arguments);
